@@ -1,65 +1,114 @@
-import Image from "next/image";
+import Link from "next/link";
+import PieceCard from "@/components/piece-card";
+import PotterCard from "@/components/potter-card";
+import { createClient } from "@/lib/supabase/server";
 
-export default function Home() {
+export default async function Home() {
+  const supabase = await createClient();
+
+  const [{ data: featuredPieces }, { data: potters }] = await Promise.all([
+    supabase
+      .from("pieces")
+      .select("*, potter:potters(*), piece_images(*)")
+      .eq("featured", true)
+      .order("created_at", { ascending: false })
+      .limit(6),
+    supabase.from("potters").select("*").order("name"),
+  ]);
+
   return (
-    <div className="flex flex-col flex-1 items-center justify-center bg-zinc-50 font-sans dark:bg-black">
-      <main className="flex flex-1 w-full max-w-3xl flex-col items-center justify-between py-32 px-16 bg-white dark:bg-black sm:items-start">
-        <Image
-          className="dark:invert"
-          src="/next.svg"
-          alt="Next.js logo"
-          width={100}
-          height={20}
-          priority
-        />
-        <div className="flex flex-col items-center gap-6 text-center sm:items-start sm:text-left">
-          <h1 className="max-w-xs text-3xl font-semibold leading-10 tracking-tight text-black dark:text-zinc-50">
-            To get started, edit the page.tsx file.
-          </h1>
-          <p className="max-w-md text-lg leading-8 text-zinc-600 dark:text-zinc-400">
-            Looking for a starting point or more instructions? Head over to{" "}
-            <a
-              href="https://vercel.com/templates?framework=next.js&utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-              className="font-medium text-zinc-950 dark:text-zinc-50"
-            >
-              Templates
-            </a>{" "}
-            or the{" "}
-            <a
-              href="https://nextjs.org/learn?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-              className="font-medium text-zinc-950 dark:text-zinc-50"
-            >
-              Learning
-            </a>{" "}
-            center.
+    <>
+      {/* Hero */}
+      <section className="relative overflow-hidden bg-stone py-32 md:py-48">
+        <div className="absolute inset-0 bg-[radial-gradient(circle_at_70%_50%,#A47E77,transparent_60%)] opacity-20" />
+        <div className="relative max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
+          <p className="text-sage text-sm uppercase tracking-[0.3em] mb-6 font-medium">
+            A collective of potters
           </p>
+          <h1 className="font-serif text-cream text-5xl md:text-7xl lg:text-8xl font-bold leading-tight">
+            Throw Down
+            <br />
+            <span className="text-sage">Pottery</span>
+          </h1>
+          <p className="mt-8 text-cream/60 text-lg md:text-xl max-w-xl mx-auto leading-relaxed">
+            Handcrafted pieces shaped by three potters. Each one unique, made to be used and loved.
+          </p>
+          <div className="mt-12 flex flex-col sm:flex-row gap-4 justify-center">
+            <Link
+              href="/gallery"
+              className="inline-block bg-sage text-stone font-medium px-8 py-4 rounded-full text-sm tracking-wide hover:bg-amber transition-colors"
+            >
+              Explore the Gallery
+            </Link>
+            <Link
+              href="/potters"
+              className="inline-block border border-cream/30 text-cream px-8 py-4 rounded-full text-sm tracking-wide hover:border-cream/60 transition-colors"
+            >
+              Meet the Potters
+            </Link>
+          </div>
         </div>
-        <div className="flex flex-col gap-4 text-base font-medium sm:flex-row">
-          <a
-            className="flex h-12 w-full items-center justify-center gap-2 rounded-full bg-foreground px-5 text-background transition-colors hover:bg-[#383838] dark:hover:bg-[#ccc] md:w-[158px]"
-            href="https://vercel.com/new?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
+      </section>
+
+      {/* Featured pieces */}
+      {featuredPieces && featuredPieces.length > 0 && (
+        <section className="py-24 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="flex items-end justify-between mb-12">
+            <div>
+              <p className="text-sage text-xs uppercase tracking-widest mb-2">Selected works</p>
+              <h2 className="font-serif text-3xl md:text-4xl text-stone">Featured Pieces</h2>
+            </div>
+            <Link href="/gallery" className="text-sm text-clay hover:text-amber transition-colors hidden sm:block">
+              View all →
+            </Link>
+          </div>
+          <div className="grid grid-cols-2 md:grid-cols-3 gap-6 md:gap-8">
+            {featuredPieces.map((piece) => (
+              <PieceCard key={piece.id} piece={piece} />
+            ))}
+          </div>
+          <div className="mt-10 text-center sm:hidden">
+            <Link href="/gallery" className="text-sm text-clay hover:text-amber transition-colors">
+              View all →
+            </Link>
+          </div>
+        </section>
+      )}
+
+      {/* Meet the potters */}
+      {potters && potters.length > 0 && (
+        <section className="py-24 bg-blush/30">
+          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div className="text-center mb-16">
+              <p className="text-sage text-xs uppercase tracking-widest mb-2">The people behind the pieces</p>
+              <h2 className="font-serif text-3xl md:text-4xl text-stone">Meet the Potters</h2>
+            </div>
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-12 max-w-3xl mx-auto">
+              {potters.map((potter) => (
+                <PotterCard key={potter.id} potter={potter} />
+              ))}
+            </div>
+          </div>
+        </section>
+      )}
+
+      {/* Contact CTA */}
+      <section className="py-24 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
+        <div className="max-w-xl mx-auto">
+          <h2 className="font-serif text-3xl md:text-4xl text-stone mb-4">
+            Looking for something specific?
+          </h2>
+          <p className="text-stone/60 mb-8">
+            We take commissions and can create custom pieces. Get in touch and we'll discuss what's possible.
+          </p>
+          <Link
+            href="/contact"
+            className="inline-block bg-clay text-cream font-medium px-8 py-4 rounded-full text-sm tracking-wide hover:bg-stone transition-colors"
           >
-            <Image
-              className="dark:invert"
-              src="/vercel.svg"
-              alt="Vercel logomark"
-              width={16}
-              height={16}
-            />
-            Deploy Now
-          </a>
-          <a
-            className="flex h-12 w-full items-center justify-center rounded-full border border-solid border-black/[.08] px-5 transition-colors hover:border-transparent hover:bg-black/[.04] dark:border-white/[.145] dark:hover:bg-[#1a1a1a] md:w-[158px]"
-            href="https://nextjs.org/docs?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            Documentation
-          </a>
+            Get in touch
+          </Link>
         </div>
-      </main>
-    </div>
+      </section>
+    </>
   );
 }
