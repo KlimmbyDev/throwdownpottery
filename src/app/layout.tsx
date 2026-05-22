@@ -13,6 +13,9 @@ const robotoMono = Roboto_Mono({
 export const metadata: Metadata = {
   title: "Throw Down Pottery",
   description: "Handcrafted pottery by a collective of skilled potters.",
+  icons: {
+    icon: "/favicon.svg",
+  },
 };
 
 export default function RootLayout({

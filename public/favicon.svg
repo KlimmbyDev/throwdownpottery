@@ -1,0 +1,12 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32">
+  <!-- Mug body -->
+  <rect x="3" y="11" width="19" height="17" rx="3" fill="#E2B4BD"/>
+  <!-- Handle -->
+  <path d="M22 14 C28 14 28 25 22 25" fill="none" stroke="#E2B4BD" stroke-width="3.5" stroke-linecap="round"/>
+  <!-- Rim -->
+  <rect x="3" y="11" width="19" height="3.5" rx="3" fill="#6B3A4A" opacity="0.25"/>
+  <!-- Steam left -->
+  <path d="M9 8 C9 6 11 6 11 4" fill="none" stroke="#6B3A4A" stroke-width="1.5" stroke-linecap="round" opacity="0.4"/>
+  <!-- Steam right -->
+  <path d="M14 8 C14 6 16 6 16 4" fill="none" stroke="#6B3A4A" stroke-width="1.5" stroke-linecap="round" opacity="0.4"/>
+</svg>
