@@ -3,8 +3,14 @@ import { redirect } from "next/navigation";
 import Link from "next/link";
 import Image from "next/image";
 import DeletePieceButton from "@/components/studio/delete-piece-button";
+import PotterPicker from "@/components/studio/potter-picker";
 
-export default async function StudioPage() {
+export default async function StudioPage({
+  searchParams,
+}: {
+  searchParams: Promise<{ potter?: string }>;
+}) {
+  const { potter: potterSlug } = await searchParams;
   const supabase = await createClient();
   const {
     data: { user },
@@ -12,22 +18,17 @@ export default async function StudioPage() {
 
   if (!user) redirect("/studio/login");
 
-  const { data: potter } = await supabase
+  const { data: potters } = await supabase
     .from("potters")
     .select("*")
-    .eq("user_id", user.id)
-    .single();
+    .order("name");
 
-  if (!potter) {
-    return (
-      <div className="py-24 text-center">
-        <p className="font-serif text-xl text-stone/40 mb-2">Account not linked</p>
-        <p className="text-sm text-stone/40">
-          Your account hasn't been linked to a potter yet. Contact the administrator.
-        </p>
-      </div>
-    );
+  if (!potterSlug) {
+    return <PotterPicker potters={potters ?? []} />;
   }
+
+  const potter = potters?.find((p) => p.slug === potterSlug);
+  if (!potter) redirect("/studio");
 
   const { data: pieces } = await supabase
     .from("pieces")
@@ -39,11 +40,18 @@ export default async function StudioPage() {
     <div>
       <div className="flex items-center justify-between mb-8">
         <div>
-          <p className="text-sage text-xs uppercase tracking-widest mb-1">Your work</p>
+          <button
+            onClick={undefined}
+            className="text-xs text-stone/40 mb-1 block"
+          >
+            <Link href="/studio" className="hover:text-stone transition-colors">
+              ← Switch potter
+            </Link>
+          </button>
           <h1 className="font-serif text-2xl text-stone">{potter.name}</h1>
         </div>
         <Link
-          href="/studio/pieces/new"
+          href={`/studio/pieces/new?potter=${potter.slug}`}
           className="bg-sage text-stone text-sm font-medium px-5 py-2.5 rounded-full hover:bg-amber transition-colors"
         >
           + Add piece
@@ -54,7 +62,7 @@ export default async function StudioPage() {
         <div className="py-24 text-center border border-dashed border-stone/20 rounded">
           <p className="font-serif text-xl text-stone/40 mb-3">No pieces yet</p>
           <Link
-            href="/studio/pieces/new"
+            href={`/studio/pieces/new?potter=${potter.slug}`}
             className="text-sm text-clay hover:text-amber transition-colors"
           >
             Add your first piece →
@@ -64,7 +72,8 @@ export default async function StudioPage() {
         <div className="grid grid-cols-2 sm:grid-cols-3 gap-6">
           {pieces.map((piece) => {
             const image = (piece.piece_images ?? []).sort(
-              (a: { position: number }, b: { position: number }) => a.position - b.position
+              (a: { position: number }, b: { position: number }) =>
+                a.position - b.position
             )[0];
             return (
               <div key={piece.id}>
@@ -90,12 +99,16 @@ export default async function StudioPage() {
                   )}
                 </div>
                 <div className="mt-2 space-y-1">
-                  <p className="font-serif text-stone text-sm leading-tight">{piece.title}</p>
-                  <p className="text-xs text-stone/40 uppercase tracking-widest">{piece.category}</p>
+                  <p className="font-serif text-stone text-sm leading-tight">
+                    {piece.title}
+                  </p>
+                  <p className="text-xs text-stone/40 uppercase tracking-widest">
+                    {piece.category}
+                  </p>
                 </div>
                 <div className="flex gap-3 mt-1.5">
                   <Link
-                    href={`/studio/pieces/${piece.id}/edit`}
+                    href={`/studio/pieces/${piece.id}/edit?potter=${potter.slug}`}
                     className="text-xs text-clay hover:text-amber transition-colors"
                   >
                     Edit

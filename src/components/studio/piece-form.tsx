@@ -22,10 +22,11 @@ type NewImage = { url: string };
 
 type Props = {
   potterId: string;
+  potterSlug: string;
   piece?: Piece & { piece_images?: PieceImage[] };
 };
 
-export default function PieceForm({ potterId, piece }: Props) {
+export default function PieceForm({ potterId, potterSlug, piece }: Props) {
   const router = useRouter();
   const [saving, setSaving] = useState(false);
   const [uploading, setUploading] = useState(false);
@@ -69,7 +70,7 @@ export default function PieceForm({ potterId, piece }: Props) {
     e.target.value = "";
   }
 
-  async function handleSubmit(e: React.FormEvent) {
+  async function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault();
     setSaving(true);
     setError("");
@@ -120,7 +121,7 @@ export default function PieceForm({ potterId, piece }: Props) {
         }
       }
 
-      router.push("/studio");
+      router.push(`/studio?potter=${potterSlug}`);
       router.refresh();
     } catch {
       setError("Something went wrong. Please try again.");
