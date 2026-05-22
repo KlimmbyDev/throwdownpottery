@@ -4,17 +4,25 @@ import PotterCard from "@/components/potter-card";
 import { createClient } from "@/lib/supabase/server";
 
 export default async function Home() {
-  const supabase = await createClient();
+  let featuredPieces = null;
+  let potters = null;
 
-  const [{ data: featuredPieces }, { data: potters }] = await Promise.all([
-    supabase
-      .from("pieces")
-      .select("*, potter:potters(*), piece_images(*)")
-      .eq("featured", true)
-      .order("created_at", { ascending: false })
-      .limit(6),
-    supabase.from("potters").select("*").order("name"),
-  ]);
+  try {
+    const supabase = await createClient();
+    const [piecesRes, pottersRes] = await Promise.all([
+      supabase
+        .from("pieces")
+        .select("*, potter:potters(*), piece_images(*)")
+        .eq("featured", true)
+        .order("created_at", { ascending: false })
+        .limit(6),
+      supabase.from("potters").select("*").order("name"),
+    ]);
+    featuredPieces = piecesRes.data;
+    potters = pottersRes.data;
+  } catch {
+    // Missing env vars or Supabase unreachable — render with empty data
+  }
 
   return (
     <>
