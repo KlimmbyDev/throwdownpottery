@@ -15,6 +15,7 @@ export default async function PotterPage({
     .from("potters")
     .select("*")
     .eq("slug", slug)
+    .is("archived_at", null)
     .single();
 
   if (!potter) notFound();
@@ -23,6 +24,7 @@ export default async function PotterPage({
     .from("pieces")
     .select("*, potter:potters(*), piece_images(*)")
     .eq("potter_id", potter.id)
+    .is("archived_at", null)
     .order("created_at", { ascending: false });
 
   return (

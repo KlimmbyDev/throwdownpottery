@@ -13,8 +13,10 @@ export default async function PiecePage({
 
   const { data: piece } = await supabase
     .from("pieces")
-    .select("*, potter:potters(*), piece_images(*)")
+    .select("*, potter:potters!inner(*), piece_images(*)")
     .eq("id", id)
+    .is("archived_at", null)
+    .is("potter.archived_at", null)
     .single();
 
   if (!piece) notFound();

@@ -10,9 +10,11 @@ export default async function GalleryPage() {
     const [piecesRes, pottersRes] = await Promise.all([
       supabase
         .from("pieces")
-        .select("*, potter:potters(*), piece_images(*)")
+        .select("*, potter:potters!inner(*), piece_images(*)")
+        .is("archived_at", null)
+        .is("potter.archived_at", null)
         .order("created_at", { ascending: false }),
-      supabase.from("potters").select("id, name").order("name"),
+      supabase.from("potters").select("id, name").is("archived_at", null).order("name"),
     ]);
     pieces = piecesRes.data;
     potters = pottersRes.data;

@@ -3,7 +3,11 @@ import PotterCard from "@/components/potter-card";
 
 export default async function PottersPage() {
   const supabase = await createClient();
-  const { data: potters } = await supabase.from("potters").select("*").order("name");
+  const { data: potters } = await supabase
+    .from("potters")
+    .select("*")
+    .is("archived_at", null)
+    .order("name");
 
   return (
     <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-16">

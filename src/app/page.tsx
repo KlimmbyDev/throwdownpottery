@@ -12,11 +12,13 @@ export default async function Home() {
     const [piecesRes, pottersRes] = await Promise.all([
       supabase
         .from("pieces")
-        .select("*, potter:potters(*), piece_images(*)")
+        .select("*, potter:potters!inner(*), piece_images(*)")
         .eq("featured", true)
+        .is("archived_at", null)
+        .is("potter.archived_at", null)
         .order("created_at", { ascending: false })
         .limit(6),
-      supabase.from("potters").select("*").order("name"),
+      supabase.from("potters").select("*").is("archived_at", null).order("name"),
     ]);
     featuredPieces = piecesRes.data;
     potters = pottersRes.data;
@@ -39,7 +41,7 @@ export default async function Home() {
             <span className="text-sage">Pottery</span>
           </h1>
           <p className="mt-8 text-cream/60 text-lg md:text-xl max-w-xl mx-auto leading-relaxed">
-            Handcrafted pieces shaped by three potters. Each one unique, made to be used and loved.
+            Handcrafted pieces shaped by our potters. Each one unique, made to be used and loved.
           </p>
           <div className="mt-12 flex flex-col sm:flex-row gap-4 justify-center">
             <Link
