@@ -21,6 +21,7 @@ export default async function StudioPage({
   const { data: potters } = await supabase
     .from("potters")
     .select("*")
+    .is("archived_at", null)
     .order("name");
 
   if (!potterSlug) {
