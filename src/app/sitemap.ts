@@ -20,14 +20,14 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
       .is("potter.archived_at", null),
   ]);
 
-  const pages = ["", "/gallery", "/potters", "/contact"].map((path) => ({
+  const pages = ["", "/gallery", "/artists", "/contact"].map((path) => ({
     url: `${SITE_URL}${path}`,
   }));
 
   return [
     ...pages,
     ...(potters ?? []).map((p) => ({
-      url: `${SITE_URL}/potters/${p.slug}`,
+      url: `${SITE_URL}/artists/${p.slug}`,
       lastModified: p.created_at,
     })),
     ...(pieces ?? []).map((p) => ({

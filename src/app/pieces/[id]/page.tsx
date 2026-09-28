@@ -109,7 +109,7 @@ export default async function PiecePage({ params }: Props) {
             </h1>
             {piece.potter && (
               <Link
-                href={`/potters/${piece.potter.slug}`}
+                href={`/artists/${piece.potter.slug}`}
                 className="inline-block mt-2 text-sm text-clay hover:text-amber transition-colors"
               >
                 by {piece.potter.name}
@@ -179,7 +179,7 @@ export default async function PiecePage({ params }: Props) {
               More from {piece.potter.name}
             </h2>
             <Link
-              href={`/potters/${piece.potter.slug}`}
+              href={`/artists/${piece.potter.slug}`}
               className="text-sm text-clay hover:text-amber transition-colors"
             >
               See all →

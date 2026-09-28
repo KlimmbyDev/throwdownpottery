@@ -6,6 +6,8 @@ export type PieceCategory =
   | "sculpture"
   | "cup"
   | "platter"
+  | "print"
+  | "stamp"
   | "other";
 
 export type Potter = {

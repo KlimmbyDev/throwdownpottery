@@ -4,7 +4,7 @@ import type { Potter } from "@/lib/types";
 
 export default function PotterCard({ potter }: { potter: Potter }) {
   return (
-    <Link href={`/potters/${potter.slug}`} className="group block text-center">
+    <Link href={`/artists/${potter.slug}`} className="group block text-center">
       <div className="relative w-32 h-32 mx-auto rounded-full overflow-hidden bg-blush/30">
         {potter.avatar_url ? (
           <Image

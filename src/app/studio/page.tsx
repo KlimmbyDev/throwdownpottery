@@ -94,7 +94,7 @@ export default async function StudioPage({
             href="/studio"
             className="text-xs text-stone/40 hover:text-stone transition-colors mb-1 block"
           >
-            ← Switch potter
+            ← Switch artist
           </Link>
           <h1 className="font-serif text-2xl text-stone">{potter.name}</h1>
           <Link

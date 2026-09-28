@@ -37,7 +37,7 @@ export default async function ProfilePage({
         </Link>
         <h1 className="font-serif text-2xl text-stone mt-2">Your profile</h1>
         <p className="text-sm text-stone/50 mt-1">
-          Shown on your potter page. Anything left empty simply isn&apos;t shown.
+          Shown on your artist page. Anything left empty simply isn&apos;t shown.
         </p>
       </div>
       <ProfileForm potter={potter} />

@@ -125,7 +125,7 @@ export default function ProfileForm({ potter }: { potter: Potter }) {
           id="specialty"
           value={specialty}
           onChange={(e) => setSpecialty(e.target.value)}
-          placeholder="e.g. Wheel-thrown stoneware"
+          placeholder="e.g. Wheel-thrown stoneware or lino prints"
           className={input}
         />
       </div>

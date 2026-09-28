@@ -11,7 +11,7 @@ export default function Footer() {
           </div>
           <nav className="flex gap-6 text-sm">
             <Link href="/gallery" className="hover:text-amber transition-colors">Gallery</Link>
-            <Link href="/potters" className="hover:text-amber transition-colors">Potters</Link>
+            <Link href="/artists" className="hover:text-amber transition-colors">Artists</Link>
             <Link href="/contact" className="hover:text-amber transition-colors">Contact</Link>
           </nav>
         </div>

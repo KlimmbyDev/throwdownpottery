@@ -13,7 +13,7 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
   if (!potter) return {};
   const description = potter.bio
     ? truncate(potter.bio)
-    : `Handmade pottery by ${potter.name}, part of the Throw Down Pottery collective.`;
+    : `Handmade work by ${potter.name}, part of the Throw Down Pottery collective.`;
   return {
     title: potter.name,
     description,

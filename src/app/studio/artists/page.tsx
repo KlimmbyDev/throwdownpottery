@@ -18,9 +18,9 @@ export default async function ManagePottersPage() {
         <Link href="/studio" className="text-xs text-stone/40 hover:text-stone transition-colors">
           ← Back
         </Link>
-        <h1 className="font-serif text-2xl text-stone mt-2">Manage potters</h1>
+        <h1 className="font-serif text-2xl text-stone mt-2">Manage artists</h1>
         <p className="text-sm text-stone/50 mt-1">
-          Archiving hides a potter and all their pieces from the site. Nothing is deleted, and
+          Archiving hides an artist and all their pieces from the site. Nothing is deleted, and
           you can restore them any time.
         </p>
       </div>

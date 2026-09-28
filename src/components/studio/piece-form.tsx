@@ -15,6 +15,8 @@ const CATEGORIES: { value: PieceCategory; label: string }[] = [
   { value: "sculpture", label: "Sculpture" },
   { value: "cup", label: "Cup" },
   { value: "platter", label: "Platter" },
+  { value: "print", label: "Print" },
+  { value: "stamp", label: "Stamp" },
   { value: "other", label: "Other" },
 ];
 

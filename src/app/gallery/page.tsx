@@ -4,7 +4,7 @@ import type { Metadata } from "next";
 
 export const metadata: Metadata = {
   title: "Gallery",
-  description: "Browse handmade bowls, mugs, vases, plates and more from the Throw Down Pottery collective.",
+  description: "Browse handmade bowls, mugs, vases, prints and more from the Throw Down Pottery collective.",
 };
 
 export default async function GalleryPage() {

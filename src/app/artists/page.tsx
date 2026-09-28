@@ -3,8 +3,8 @@ import PotterCard from "@/components/potter-card";
 import type { Metadata } from "next";
 
 export const metadata: Metadata = {
-  title: "The Potters",
-  description: "Meet the potters behind Throw Down Pottery and see their handmade work.",
+  title: "The Artists",
+  description: "Meet the artists behind Throw Down Pottery and see their handmade work.",
 };
 
 export default async function PottersPage() {
@@ -19,10 +19,10 @@ export default async function PottersPage() {
     <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-16">
       <div className="mb-16">
         <p className="text-sage text-xs uppercase tracking-widest mb-2">The collective</p>
-        <h1 className="font-serif text-4xl md:text-5xl text-stone">The Potters</h1>
+        <h1 className="font-serif text-4xl md:text-5xl text-stone">The Artists</h1>
       </div>
       {!potters || potters.length === 0 ? (
-        <p className="text-stone/40">No potters yet.</p>
+        <p className="text-stone/40">No artists yet.</p>
       ) : (
         <div className="grid grid-cols-1 sm:grid-cols-3 gap-16 max-w-4xl">
           {potters.map((potter) => (

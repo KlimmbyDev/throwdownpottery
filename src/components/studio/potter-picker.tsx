@@ -29,10 +29,10 @@ export default function PotterPicker({ potters }: { potters: Potter[] }) {
       </div>
       <div className="text-center mt-12">
         <Link
-          href="/studio/potters"
+          href="/studio/artists"
           className="text-xs text-stone/40 hover:text-stone transition-colors"
         >
-          Manage potters
+          Manage artists
         </Link>
       </div>
     </div>

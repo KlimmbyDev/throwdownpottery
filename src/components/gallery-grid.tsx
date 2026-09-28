@@ -13,6 +13,8 @@ const CATEGORIES: { value: PieceCategory | "all"; label: string }[] = [
   { value: "sculpture", label: "Sculptures" },
   { value: "cup", label: "Cups" },
   { value: "platter", label: "Platters" },
+  { value: "print", label: "Prints" },
+  { value: "stamp", label: "Stamps" },
   { value: "other", label: "Other" },
 ];
 
@@ -48,6 +50,9 @@ export default function GalleryGrid({
     });
   }
 
+  const inUse = new Set(pieces.map((p) => p.category));
+  const categories = CATEGORIES.filter((c) => c.value === "all" || inUse.has(c.value));
+
   const control =
     "text-sm border border-stone/20 rounded-full px-4 py-1.5 bg-transparent text-stone/60 focus:outline-none focus:border-clay cursor-pointer";
 
@@ -55,7 +60,7 @@ export default function GalleryGrid({
     <div>
       <div className="flex flex-col gap-4 mb-10">
         <div className="flex flex-wrap gap-2">
-          {CATEGORIES.map((cat) => (
+          {categories.map((cat) => (
             <button
               key={cat.value}
               onClick={() => setCategory(cat.value)}
@@ -75,10 +80,10 @@ export default function GalleryGrid({
             <select
               value={potterId}
               onChange={(e) => setPotterId(e.target.value)}
-              aria-label="Potter"
+              aria-label="Artist"
               className={control}
             >
-              <option value="all">All Potters</option>
+              <option value="all">All Artists</option>
               {potters.map((p) => (
                 <option key={p.id} value={p.id}>{p.name}</option>
               ))}

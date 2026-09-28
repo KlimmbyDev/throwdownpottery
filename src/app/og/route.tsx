@@ -17,7 +17,7 @@ export function GET() {
         }}
       >
         <div style={{ fontSize: 28, letterSpacing: 8, color: "#A2B6A1", marginBottom: 24 }}>
-          A COLLECTIVE OF POTTERS
+          A COLLECTIVE OF ARTISTS
         </div>
         <div style={{ display: "flex", fontSize: 110, fontWeight: 700 }}>
           Throw Down&nbsp;<span style={{ color: "#A2B6A1" }}>Pottery</span>

@@ -40,8 +40,8 @@ export default function ManagePotters({ potters }: { potters: Potter[] }) {
     if (insertError) {
       setError(
         insertError.code === "23505"
-          ? "A potter with that name already exists. If they're archived, restore them below."
-          : "Couldn't add the potter. Please try again."
+          ? "An artist with that name already exists. If they're archived, restore them below."
+          : "Couldn't add the artist. Please try again."
       );
       return;
     }
@@ -68,7 +68,7 @@ export default function ManagePotters({ potters }: { potters: Potter[] }) {
     setBusy(false);
     // RLS blocks silently: a refused update returns no error and no rows.
     if (updateError || !data?.length) {
-      setError("Couldn't update that potter. Please try again.");
+      setError("Couldn't update that artist. Please try again.");
       return;
     }
     router.refresh();
@@ -83,7 +83,7 @@ export default function ManagePotters({ potters }: { potters: Potter[] }) {
         <input
           value={name}
           onChange={(e) => setName(e.target.value)}
-          placeholder="New potter's name"
+          placeholder="New artist's name"
           className="flex-1 border border-stone/20 rounded px-3 py-2.5 text-sm bg-cream focus:outline-none focus:border-clay"
         />
         <button
@@ -91,7 +91,7 @@ export default function ManagePotters({ potters }: { potters: Potter[] }) {
           disabled={busy}
           className="bg-sage text-stone text-sm font-medium px-5 py-2.5 rounded-full hover:bg-amber transition-colors disabled:opacity-50 cursor-pointer"
         >
-          Add potter
+          Add artist
         </button>
       </form>
 
@@ -100,7 +100,7 @@ export default function ManagePotters({ potters }: { potters: Potter[] }) {
       <section>
         <h2 className="text-xs text-stone/50 uppercase tracking-wider mb-2">On the site</h2>
         {live.length === 0 ? (
-          <p className="text-sm text-stone/40 py-3">No potters yet.</p>
+          <p className="text-sm text-stone/40 py-3">No artists yet.</p>
         ) : (
           live.map((p) => (
             <div key={p.id} className={row}>

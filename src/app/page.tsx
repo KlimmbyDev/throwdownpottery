@@ -33,7 +33,7 @@ export default async function Home() {
         <div className="absolute inset-0 bg-[radial-gradient(circle_at_70%_50%,#A47E77,transparent_60%)] opacity-20" />
         <div className="relative max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
           <p className="text-sage text-sm uppercase tracking-[0.3em] mb-6 font-medium">
-            A collective of potters
+            A collective of artists
           </p>
           <h1 className="font-serif text-cream text-5xl md:text-7xl lg:text-8xl font-bold leading-tight">
             Throw Down
@@ -41,7 +41,7 @@ export default async function Home() {
             <span className="text-sage">Pottery</span>
           </h1>
           <p className="mt-8 text-cream/60 text-lg md:text-xl max-w-xl mx-auto leading-relaxed">
-            Handcrafted pieces shaped by our potters. Each one unique, made to be used and loved.
+            Handcrafted pieces shaped by our artists. Each one unique, made to be used and loved.
           </p>
           <div className="mt-12 flex flex-col sm:flex-row gap-4 justify-center">
             <Link
@@ -51,10 +51,10 @@ export default async function Home() {
               Explore the Gallery
             </Link>
             <Link
-              href="/potters"
+              href="/artists"
               className="inline-block border border-cream/30 text-cream px-8 py-4 rounded-full text-sm tracking-wide hover:border-cream/60 transition-colors"
             >
-              Meet the Potters
+              Meet the Artists
             </Link>
           </div>
         </div>
@@ -85,13 +85,13 @@ export default async function Home() {
         </section>
       )}
 
-      {/* Meet the potters */}
+      {/* Meet the artists */}
       {potters && potters.length > 0 && (
         <section className="py-24 bg-blush/30">
           <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
             <div className="text-center mb-16">
               <p className="text-sage text-xs uppercase tracking-widest mb-2">The people behind the pieces</p>
-              <h2 className="font-serif text-3xl md:text-4xl text-stone">Meet the Potters</h2>
+              <h2 className="font-serif text-3xl md:text-4xl text-stone">Meet the Artists</h2>
             </div>
             <div className="grid grid-cols-1 sm:grid-cols-3 gap-12 max-w-3xl mx-auto">
               {potters.map((potter) => (
