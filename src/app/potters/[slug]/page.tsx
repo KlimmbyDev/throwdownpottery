@@ -2,22 +2,34 @@ import { createClient } from "@/lib/supabase/server";
 import PieceCard from "@/components/piece-card";
 import Image from "next/image";
 import { notFound } from "next/navigation";
+import type { Metadata } from "next";
+import { getPotter } from "@/lib/data";
+import { openGraph, truncate } from "@/lib/site";
 
-export default async function PotterPage({
-  params,
-}: {
-  params: Promise<{ slug: string }>;
-}) {
+type Props = { params: Promise<{ slug: string }> };
+
+export async function generateMetadata({ params }: Props): Promise<Metadata> {
+  const potter = await getPotter((await params).slug);
+  if (!potter) return {};
+  const description = potter.bio
+    ? truncate(potter.bio)
+    : `Handmade pottery by ${potter.name}, part of the Throw Down Pottery collective.`;
+  return {
+    title: potter.name,
+    description,
+    openGraph: openGraph({
+      title: potter.name,
+      description,
+      image: potter.avatar_url ? { url: potter.avatar_url, alt: potter.name } : null,
+    }),
+  };
+}
+
+export default async function PotterPage({ params }: Props) {
   const { slug } = await params;
   const supabase = await createClient();
 
-  const { data: potter } = await supabase
-    .from("potters")
-    .select("*")
-    .eq("slug", slug)
-    .is("archived_at", null)
-    .single();
-
+  const potter = await getPotter(slug);
   if (!potter) notFound();
 
   const { data: pieces } = await supabase

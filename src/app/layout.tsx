@@ -3,6 +3,7 @@ import { Roboto_Mono } from "next/font/google";
 import "./globals.css";
 import Nav from "@/components/nav";
 import Footer from "@/components/footer";
+import { SITE_DESCRIPTION, SITE_NAME, SITE_URL, openGraph } from "@/lib/site";
 
 const robotoMono = Roboto_Mono({
   variable: "--font-roboto-mono",
@@ -11,8 +12,11 @@ const robotoMono = Roboto_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "Throw Down Pottery",
-  description: "Handcrafted pottery by a collective of skilled potters.",
+  metadataBase: new URL(SITE_URL),
+  title: { default: SITE_NAME, template: `%s · ${SITE_NAME}` },
+  description: SITE_DESCRIPTION,
+  openGraph: openGraph({}),
+  twitter: { card: "summary_large_image" },
   icons: {
     icon: "/favicon.svg",
   },

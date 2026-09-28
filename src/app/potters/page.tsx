@@ -1,5 +1,11 @@
 import { createClient } from "@/lib/supabase/server";
 import PotterCard from "@/components/potter-card";
+import type { Metadata } from "next";
+
+export const metadata: Metadata = {
+  title: "The Potters",
+  description: "Meet the potters behind Throw Down Pottery and see their handmade work.",
+};
 
 export default async function PottersPage() {
   const supabase = await createClient();

@@ -1,5 +1,11 @@
 import Link from "next/link";
+import type { Metadata } from "next";
 import SignOutButton from "@/components/studio/sign-out-button";
+
+export const metadata: Metadata = {
+  title: "Studio",
+  robots: { index: false, follow: false },
+};
 
 export default function StudioLayout({ children }: { children: React.ReactNode }) {
   return (

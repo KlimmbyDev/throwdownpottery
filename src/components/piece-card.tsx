@@ -3,7 +3,7 @@ import Link from "next/link";
 import type { Piece } from "@/lib/types";
 
 export default function PieceCard({ piece }: { piece: Piece }) {
-  const image = piece.piece_images?.[0];
+  const image = [...(piece.piece_images ?? [])].sort((a, b) => a.position - b.position)[0];
 
   return (
     <Link href={`/pieces/${piece.id}`} className="group block">

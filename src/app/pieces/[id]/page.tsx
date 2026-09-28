@@ -2,28 +2,60 @@ import { createClient } from "@/lib/supabase/server";
 import Image from "next/image";
 import Link from "next/link";
 import { notFound } from "next/navigation";
+import type { Metadata } from "next";
+import PieceCard from "@/components/piece-card";
+import { getPiece } from "@/lib/data";
+import { openGraph, truncate } from "@/lib/site";
+import type { Piece, PieceImage } from "@/lib/types";
 
-export default async function PiecePage({
-  params,
-}: {
-  params: Promise<{ id: string }>;
-}) {
+type Props = { params: Promise<{ id: string }> };
+
+function sortedImages(piece: Piece) {
+  return [...(piece.piece_images ?? [])].sort(
+    (a: PieceImage, b: PieceImage) => a.position - b.position
+  );
+}
+
+export async function generateMetadata({ params }: Props): Promise<Metadata> {
+  const piece = await getPiece((await params).id);
+  if (!piece) return {};
+
+  const title = `${piece.title} by ${piece.potter.name}`;
+  const kind = piece.category === "other" ? "piece" : piece.category;
+  const summary = [`Handmade ${kind} by ${piece.potter.name}`];
+  if (!piece.available) summary.push("Sold");
+  else if (piece.price != null) summary.push(`€${Number(piece.price).toFixed(2)}`);
+  const description = piece.description ? truncate(piece.description) : summary.join(" · ");
+  const image = sortedImages(piece)[0];
+
+  return {
+    title,
+    description,
+    openGraph: openGraph({
+      title,
+      description,
+      image: image ? { url: image.url, alt: image.alt ?? piece.title } : null,
+    }),
+  };
+}
+
+export default async function PiecePage({ params }: Props) {
   const { id } = await params;
   const supabase = await createClient();
 
-  const { data: piece } = await supabase
-    .from("pieces")
-    .select("*, potter:potters!inner(*), piece_images(*)")
-    .eq("id", id)
-    .is("archived_at", null)
-    .is("potter.archived_at", null)
-    .single();
-
+  const piece = await getPiece(id);
   if (!piece) notFound();
 
-  const images = (piece.piece_images ?? []).sort(
-    (a: { position: number }, b: { position: number }) => a.position - b.position
-  );
+  const { data: morePieces } = await supabase
+    .from("pieces")
+    .select("*, piece_images(*)")
+    .eq("potter_id", piece.potter_id)
+    .neq("id", piece.id)
+    .is("archived_at", null)
+    .order("created_at", { ascending: false })
+    .limit(4);
+
+  const images = sortedImages(piece);
   const primaryImage = images[0];
   const contactEmail =
     process.env.NEXT_PUBLIC_CONTACT_EMAIL ?? "hello@throwdownpottery.com";
@@ -139,6 +171,27 @@ export default async function PiecePage({
           </div>
         </div>
       </div>
+
+      {morePieces && morePieces.length > 0 && (
+        <section className="mt-24 pt-16 border-t border-stone/10">
+          <div className="flex items-end justify-between mb-10">
+            <h2 className="font-serif text-2xl md:text-3xl text-stone">
+              More from {piece.potter.name}
+            </h2>
+            <Link
+              href={`/potters/${piece.potter.slug}`}
+              className="text-sm text-clay hover:text-amber transition-colors"
+            >
+              See all →
+            </Link>
+          </div>
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-6 md:gap-8">
+            {morePieces.map((p) => (
+              <PieceCard key={p.id} piece={p} />
+            ))}
+          </div>
+        </section>
+      )}
     </div>
   );
 }

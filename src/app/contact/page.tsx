@@ -1,3 +1,10 @@
+import type { Metadata } from "next";
+
+export const metadata: Metadata = {
+  title: "Contact",
+  description: "Get in touch about a piece or a custom commission.",
+};
+
 export default function ContactPage() {
   const email =
     process.env.NEXT_PUBLIC_CONTACT_EMAIL ?? "hello@throwdownpottery.com";
