@@ -16,6 +16,7 @@ export type Potter = {
   specialty: string | null;
   avatar_url: string | null;
   instagram_url: string | null;
+  archived_at: string | null;
   created_at: string;
 };
 
@@ -38,6 +39,7 @@ export type Piece = {
   materials: string | null;
   available: boolean;
   featured: boolean;
+  archived_at: string | null;
   created_at: string;
   potter?: Potter;
   piece_images?: PieceImage[];

@@ -1,5 +1,6 @@
 "use client";
 
+import Link from "next/link";
 import { useRouter } from "next/navigation";
 import type { Potter } from "@/lib/types";
 
@@ -25,6 +26,14 @@ export default function PotterPicker({ potters }: { potters: Potter[] }) {
             <p className="font-serif text-stone text-lg">{potter.name}</p>
           </button>
         ))}
+      </div>
+      <div className="text-center mt-12">
+        <Link
+          href="/studio/potters"
+          className="text-xs text-stone/40 hover:text-stone transition-colors"
+        >
+          Manage potters
+        </Link>
       </div>
     </div>
   );

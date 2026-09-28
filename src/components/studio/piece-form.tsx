@@ -4,6 +4,7 @@ import { useState } from "react";
 import { useRouter } from "next/navigation";
 import Image from "next/image";
 import { createClient } from "@/lib/supabase/client";
+import { resizeImage } from "@/lib/resize-image";
 import type { Piece, PieceCategory, PieceImage } from "@/lib/types";
 
 const CATEGORIES: { value: PieceCategory; label: string }[] = [
@@ -53,7 +54,8 @@ export default function PieceForm({ potterId, potterSlug, piece }: Props) {
     const supabase = createClient();
     const uploaded: NewImage[] = [];
 
-    for (const file of files) {
+    for (const original of files) {
+      const file = await resizeImage(original);
       const ext = file.name.split(".").pop();
       const filename = `${crypto.randomUUID()}.${ext}`;
       const { error: uploadError } = await supabase.storage
