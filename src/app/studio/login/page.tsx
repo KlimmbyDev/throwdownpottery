@@ -4,9 +4,11 @@ import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
 
-const STUDIO_EMAIL = "potter@throwdownpottery.com";
+const input =
+  "w-full border border-stone/20 rounded px-3 py-2.5 text-sm bg-cream focus:outline-none focus:border-clay";
 
 export default function LoginPage() {
+  const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
@@ -16,18 +18,17 @@ export default function LoginPage() {
     e.preventDefault();
     setLoading(true);
     setError("");
-    const supabase = createClient();
-    const { error } = await supabase.auth.signInWithPassword({
-      email: STUDIO_EMAIL,
+    const { error } = await createClient().auth.signInWithPassword({
+      email: email.trim(),
       password,
     });
     if (error) {
-      setError("Incorrect password");
+      setError("Incorrect email or password.");
       setLoading(false);
-    } else {
-      router.push("/studio");
-      router.refresh();
+      return;
     }
+    router.push("/studio");
+    router.refresh();
   }
 
   return (
@@ -41,24 +42,32 @@ export default function LoginPage() {
         </div>
         <form onSubmit={handleLogin} className="space-y-4">
           <div>
-            <label className="block text-xs text-stone/50 uppercase tracking-wider mb-1">
-              Username
+            <label htmlFor="email" className="block text-xs text-stone/50 uppercase tracking-wider mb-1">
+              Email
             </label>
-            <div className="w-full border border-stone/10 rounded px-3 py-2.5 text-sm bg-stone/5 text-stone/40 select-none">
-              potter
-            </div>
+            <input
+              id="email"
+              type="email"
+              autoComplete="username"
+              value={email}
+              onChange={(e) => setEmail(e.target.value)}
+              className={input}
+              required
+              autoFocus
+            />
           </div>
           <div>
-            <label className="block text-xs text-stone/50 uppercase tracking-wider mb-1">
+            <label htmlFor="password" className="block text-xs text-stone/50 uppercase tracking-wider mb-1">
               Password
             </label>
             <input
+              id="password"
               type="password"
+              autoComplete="current-password"
               value={password}
               onChange={(e) => setPassword(e.target.value)}
-              className="w-full border border-stone/20 rounded px-3 py-2.5 text-sm bg-cream focus:outline-none focus:border-clay"
+              className={input}
               required
-              autoFocus
             />
           </div>
           {error && <p className="text-sm text-red-500">{error}</p>}
@@ -69,6 +78,9 @@ export default function LoginPage() {
           >
             {loading ? "Signing in…" : "Sign in"}
           </button>
+          <p className="text-xs text-stone/40 text-center">
+            Forgot your password? Ask Sarah to reset it.
+          </p>
         </form>
       </div>
     </div>

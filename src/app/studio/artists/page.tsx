@@ -1,14 +1,11 @@
 import { createClient } from "@/lib/supabase/server";
-import { redirect } from "next/navigation";
 import Link from "next/link";
 import ManagePotters from "@/components/studio/manage-potters";
+import { requireAdmin } from "@/lib/studio-auth";
 
 export default async function ManagePottersPage() {
+  await requireAdmin();
   const supabase = await createClient();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
-  if (!user) redirect("/studio/login");
 
   const { data: potters } = await supabase.from("potters").select("*").order("name");
 

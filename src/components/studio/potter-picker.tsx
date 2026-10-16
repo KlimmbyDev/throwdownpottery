@@ -1,6 +1,5 @@
 "use client";
 
-import Link from "next/link";
 import { useRouter } from "next/navigation";
 import type { Potter } from "@/lib/types";
 
@@ -10,8 +9,8 @@ export default function PotterPicker({ potters }: { potters: Potter[] }) {
   return (
     <div className="py-16">
       <div className="text-center mb-12">
-        <p className="text-sage text-xs uppercase tracking-widest mb-2">Welcome</p>
-        <h1 className="font-serif text-3xl text-stone">Who are you?</h1>
+        <p className="text-sage text-xs uppercase tracking-widest mb-2">Super admin</p>
+        <h1 className="font-serif text-3xl text-stone">Choose an artist</h1>
       </div>
       <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 max-w-lg mx-auto">
         {potters.map((potter) => (
@@ -26,14 +25,6 @@ export default function PotterPicker({ potters }: { potters: Potter[] }) {
             <p className="font-serif text-stone text-lg">{potter.name}</p>
           </button>
         ))}
-      </div>
-      <div className="text-center mt-12">
-        <Link
-          href="/studio/artists"
-          className="text-xs text-stone/40 hover:text-stone transition-colors"
-        >
-          Manage artists
-        </Link>
       </div>
     </div>
   );

@@ -2,6 +2,7 @@ import { createClient } from "@/lib/supabase/server";
 import { redirect, notFound } from "next/navigation";
 import Link from "next/link";
 import PieceForm from "@/components/studio/piece-form";
+import { canManagePotter, requireMember } from "@/lib/studio-auth";
 
 export default async function EditPiecePage({
   params,
@@ -14,11 +15,8 @@ export default async function EditPiecePage({
   const { potter: potterSlug } = await searchParams;
   if (!potterSlug) redirect("/studio");
 
+  const member = await requireMember();
   const supabase = await createClient();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
-  if (!user) redirect("/studio/login");
 
   const { data: potter } = await supabase
     .from("potters")
@@ -26,7 +24,7 @@ export default async function EditPiecePage({
     .eq("slug", potterSlug)
     .single();
 
-  if (!potter) redirect("/studio");
+  if (!potter || !canManagePotter(member, potter.id)) redirect("/studio");
 
   const { data: piece } = await supabase
     .from("pieces")

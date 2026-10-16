@@ -4,6 +4,7 @@ import Link from "next/link";
 import Image from "next/image";
 import PieceActions from "@/components/studio/piece-actions";
 import PotterPicker from "@/components/studio/potter-picker";
+import { requireMember } from "@/lib/studio-auth";
 import type { Piece, PieceImage } from "@/lib/types";
 
 export default async function StudioPage({
@@ -12,18 +13,32 @@ export default async function StudioPage({
   searchParams: Promise<{ potter?: string }>;
 }) {
   const { potter: potterSlug } = await searchParams;
+  const member = await requireMember();
+  const isAdmin = member.role === "admin";
   const supabase = await createClient();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
-
-  if (!user) redirect("/studio/login");
 
   const { data: potters } = await supabase
     .from("potters")
     .select("*")
     .is("archived_at", null)
     .order("name");
+
+  // Artists only ever see their own studio.
+  if (!isAdmin) {
+    const own = potters?.find((p) => p.id === member.potterId);
+    if (!own) {
+      return (
+        <div className="py-24 text-center max-w-md mx-auto">
+          <h1 className="font-serif text-2xl text-stone mb-3">No artist profile yet</h1>
+          <p className="text-sm text-stone/60">
+            Your login isn&apos;t linked to an artist profile, or the profile is archived. Ask
+            Sarah to set it up.
+          </p>
+        </div>
+      );
+    }
+    if (potterSlug !== own.slug) redirect(`/studio?potter=${own.slug}`);
+  }
 
   if (!potterSlug) {
     return <PotterPicker potters={potters ?? []} />;
@@ -90,12 +105,14 @@ export default async function StudioPage({
     <div>
       <div className="flex items-center justify-between mb-8">
         <div>
-          <Link
-            href="/studio"
-            className="text-xs text-stone/40 hover:text-stone transition-colors mb-1 block"
-          >
-            ← Switch artist
-          </Link>
+          {isAdmin && (
+            <Link
+              href="/studio"
+              className="text-xs text-stone/40 hover:text-stone transition-colors mb-1 block"
+            >
+              ← Switch artist
+            </Link>
+          )}
           <h1 className="font-serif text-2xl text-stone">{potter.name}</h1>
           <Link
             href={`/studio/profile?potter=${potter.slug}`}

@@ -2,17 +2,8 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
-import { createClient } from "@/lib/supabase/client";
+import { addArtist, setArtistArchived } from "@/app/studio/actions";
 import type { Potter } from "@/lib/types";
-
-function toSlug(name: string) {
-  return name
-    .normalize("NFD")
-    .replace(/[̀-ͯ]/g, "")
-    .toLowerCase()
-    .replace(/[^a-z0-9]+/g, "-")
-    .replace(/^-+|-+$/g, "");
-}
 
 export default function ManagePotters({ potters }: { potters: Potter[] }) {
   const router = useRouter();
@@ -26,23 +17,11 @@ export default function ManagePotters({ potters }: { potters: Potter[] }) {
   async function addPotter(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault();
     setError("");
-    const trimmed = name.trim();
-    const slug = toSlug(trimmed);
-    if (!slug) {
-      setError("Please enter a name.");
-      return;
-    }
     setBusy(true);
-    const { error: insertError } = await createClient()
-      .from("potters")
-      .insert({ name: trimmed, slug });
+    const result = await addArtist(name);
     setBusy(false);
-    if (insertError) {
-      setError(
-        insertError.code === "23505"
-          ? "An artist with that name already exists. If they're archived, restore them below."
-          : "Couldn't add the artist. Please try again."
-      );
+    if (result.error) {
+      setError(result.error);
       return;
     }
     setName("");
@@ -60,15 +39,10 @@ export default function ManagePotters({ potters }: { potters: Potter[] }) {
     }
     setBusy(true);
     setError("");
-    const { data, error: updateError } = await createClient()
-      .from("potters")
-      .update({ archived_at: value ? new Date().toISOString() : null })
-      .eq("id", potter.id)
-      .select("id");
+    const result = await setArtistArchived(potter.id, value);
     setBusy(false);
-    // RLS blocks silently: a refused update returns no error and no rows.
-    if (updateError || !data?.length) {
-      setError("Couldn't update that artist. Please try again.");
+    if (result.error) {
+      setError(result.error);
       return;
     }
     router.refresh();

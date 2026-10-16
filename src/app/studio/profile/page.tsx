@@ -2,6 +2,7 @@ import { createClient } from "@/lib/supabase/server";
 import { redirect } from "next/navigation";
 import Link from "next/link";
 import ProfileForm from "@/components/studio/profile-form";
+import { canManagePotter, requireMember } from "@/lib/studio-auth";
 
 export default async function ProfilePage({
   searchParams,
@@ -11,11 +12,8 @@ export default async function ProfilePage({
   const { potter: potterSlug } = await searchParams;
   if (!potterSlug) redirect("/studio");
 
+  const member = await requireMember();
   const supabase = await createClient();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
-  if (!user) redirect("/studio/login");
 
   const { data: potter } = await supabase
     .from("potters")
@@ -24,7 +22,7 @@ export default async function ProfilePage({
     .is("archived_at", null)
     .single();
 
-  if (!potter) redirect("/studio");
+  if (!potter || !canManagePotter(member, potter.id)) redirect("/studio");
 
   return (
     <div>
