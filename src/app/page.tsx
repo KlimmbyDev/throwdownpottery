@@ -2,6 +2,7 @@ import Link from "next/link";
 import PieceCard from "@/components/piece-card";
 import PotterCard from "@/components/potter-card";
 import { createClient } from "@/lib/supabase/server";
+import { pickHomepagePieces } from "@/lib/homepage";
 
 export default async function Home() {
   let featuredPieces = null;
@@ -13,15 +14,17 @@ export default async function Home() {
       supabase
         .from("pieces")
         .select("*, potter:potters!inner(*), piece_images(*)")
-        .eq("featured", true)
+        .eq("available", true)
         .is("archived_at", null)
         .is("potter.archived_at", null)
-        .order("created_at", { ascending: false })
-        .limit(6),
+        .order("created_at", { ascending: false }),
       supabase.from("potters").select("*").is("archived_at", null).order("name"),
     ]);
-    featuredPieces = piecesRes.data;
     potters = pottersRes.data;
+    featuredPieces = pickHomepagePieces(
+      piecesRes.data ?? [],
+      (potters ?? []).map((p) => p.id)
+    );
   } catch {
     // Missing env vars or Supabase unreachable — render with empty data
   }

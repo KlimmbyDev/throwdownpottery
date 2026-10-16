@@ -53,8 +53,10 @@ export default function PieceForm({ potterId, potterSlug, piece }: Props) {
     const files = Array.from(e.target.files ?? []);
     if (!files.length) return;
     setUploading(true);
+    setError("");
     const supabase = createClient();
     const uploaded: NewImage[] = [];
+    const failed: string[] = [];
 
     for (const original of files) {
       const file = await resizeImage(original);
@@ -63,13 +65,20 @@ export default function PieceForm({ potterId, potterSlug, piece }: Props) {
       const { error: uploadError } = await supabase.storage
         .from("pottery-images")
         .upload(filename, file);
-      if (!uploadError) {
+      if (uploadError) {
+        failed.push(original.name);
+      } else {
         const { data } = supabase.storage.from("pottery-images").getPublicUrl(filename);
         uploaded.push({ url: data.publicUrl });
       }
     }
 
     setNewImages((prev) => [...prev, ...uploaded]);
+    if (failed.length) {
+      setError(
+        `Couldn't upload ${failed.join(", ")}. Photos must be JPEG, PNG, WebP, GIF or HEIC and under 10 MB.`
+      );
+    }
     setUploading(false);
     e.target.value = "";
   }
@@ -297,7 +306,7 @@ export default function PieceForm({ potterId, potterSlug, piece }: Props) {
       </div>
 
       {/* Toggles */}
-      <div className="flex gap-6">
+      <div className="space-y-3">
         <label className="flex items-center gap-2 cursor-pointer">
           <input
             type="checkbox"
@@ -307,14 +316,20 @@ export default function PieceForm({ potterId, potterSlug, piece }: Props) {
           />
           <span className="text-sm text-stone">Available</span>
         </label>
-        <label className="flex items-center gap-2 cursor-pointer">
+        <label className="flex items-start gap-2 cursor-pointer">
           <input
             type="checkbox"
             checked={featured}
             onChange={(e) => setFeatured(e.target.checked)}
-            className="w-4 h-4 accent-sage"
+            className="w-4 h-4 accent-sage mt-0.5"
           />
-          <span className="text-sm text-stone">Featured on homepage</span>
+          <span>
+            <span className="text-sm text-stone block">My homepage piece</span>
+            <span className="text-xs text-stone/50 block">
+              One per artist, shown on the homepage while it&apos;s available. Choosing this
+              piece replaces your current one. If none is chosen, your newest piece is shown.
+            </span>
+          </span>
         </label>
       </div>
 

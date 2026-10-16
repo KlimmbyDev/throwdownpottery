@@ -80,7 +80,7 @@ export default async function StudioPage({
           )}
           {piece.featured && !piece.archived_at && (
             <div className="absolute top-2 left-2 bg-sage/80 text-stone text-xs px-2 py-0.5 rounded-full">
-              Featured
+              Homepage
             </div>
           )}
         </div>
@@ -114,12 +114,22 @@ export default async function StudioPage({
             </Link>
           )}
           <h1 className="font-serif text-2xl text-stone">{potter.name}</h1>
-          <Link
-            href={`/studio/profile?potter=${potter.slug}`}
-            className="text-xs text-clay hover:text-amber transition-colors"
-          >
-            Edit profile
-          </Link>
+          <div className="flex flex-wrap gap-x-4 gap-y-1">
+            <Link
+              href={`/studio/profile?potter=${potter.slug}`}
+              className="text-xs text-clay hover:text-amber transition-colors"
+            >
+              Edit profile
+            </Link>
+            <a
+              href={`/artists/${potter.slug}`}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="text-xs text-clay hover:text-amber transition-colors"
+            >
+              {isAdmin ? "View public page ↗" : "View my page ↗"}
+            </a>
+          </div>
         </div>
         <Link
           href={`/studio/pieces/new?potter=${potter.slug}`}

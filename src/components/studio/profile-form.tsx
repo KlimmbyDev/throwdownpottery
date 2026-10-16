@@ -35,7 +35,7 @@ export default function ProfileForm({ potter }: { potter: Potter }) {
     const supabase = createClient();
     const { error: uploadError } = await supabase.storage.from("pottery-images").upload(path, file);
     if (uploadError) {
-      setError("Couldn't upload that photo. Please try another.");
+      setError("Couldn't upload that photo. Use a JPEG, PNG, WebP, GIF or HEIC under 10 MB.");
     } else {
       setAvatarUrl(supabase.storage.from("pottery-images").getPublicUrl(path).data.publicUrl);
     }
