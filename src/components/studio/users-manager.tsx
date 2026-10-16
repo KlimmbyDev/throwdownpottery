@@ -7,21 +7,26 @@ import {
   removeStudioUser,
   resetUserPassword,
   setUserArchived,
+  setUserArtist,
   setUserRole,
+  setUsername,
   type NewUserArtist,
 } from "@/app/studio/actions";
 import type { StudioRole } from "@/lib/studio-auth";
+import { USERNAME_RULES } from "@/lib/username";
 
 export type StudioUserRow = {
   id: string;
-  email: string;
+  username: string;
   role: StudioRole | null;
+  artistId: string | null;
   artistName: string | null;
   status: "active" | "archived" | "no-access";
   mustChangePassword: boolean;
   isMe: boolean;
 };
 
+type Artist = { id: string; name: string };
 type Notice = { kind: "ok" | "error"; text: string } | null;
 
 const PASSWORD_CHARS = "ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnpqrstuvwxyz23456789";
@@ -41,14 +46,14 @@ export default function UsersManager({
   availableArtists,
 }: {
   rows: StudioUserRow[];
-  availableArtists: { id: string; name: string }[];
+  availableArtists: Artist[];
 }) {
   const router = useRouter();
   const [busy, setBusy] = useState(false);
   const [notice, setNotice] = useState<Notice>(null);
   const [removing, setRemoving] = useState<string | null>(null);
 
-  const [email, setEmail] = useState("");
+  const [username, setNewUsername] = useState("");
   const [password, setPassword] = useState(generatePassword);
   const [role, setRole] = useState<StudioRole>("artist");
   const [artistChoice, setArtistChoice] = useState("new");
@@ -82,14 +87,14 @@ export default function UsersManager({
         : artistChoice === "none"
           ? { kind: "none" }
           : { kind: "existing", potterId: artistChoice };
-    const created = email.trim();
+    const name = username.trim().toLowerCase();
     const temp = password;
     const ok = await run(
-      () => createStudioUser({ email: created, password: temp, role, artist }),
-      `Account created for ${created}. Their temporary password is ${temp}. Pass it on privately; they'll choose their own when they first sign in.`
+      () => createStudioUser({ username: name, password: temp, role, artist }),
+      `Account created. Username: ${name} · Temporary password: ${temp}. Pass these on privately; they'll choose their own password when they first sign in.`
     );
     if (ok) {
-      setEmail("");
+      setNewUsername("");
       setArtistName("");
       setArtistChoice("new");
       setRole("artist");
@@ -97,12 +102,37 @@ export default function UsersManager({
     }
   }
 
+  function renameUser(row: StudioUserRow) {
+    const next = prompt(`New username for ${row.username}?\n${USERNAME_RULES}`, row.isMe ? "" : row.username);
+    if (next === null || !next.trim()) return;
+    const name = next.trim().toLowerCase();
+    run(
+      () => setUsername(row.id, name),
+      row.isMe
+        ? `Your username is now ${name}. Use it next time you sign in.`
+        : `Username changed to ${name}. Let them know: their password stays the same.`
+    );
+  }
+
+  function linkArtist(row: StudioUserRow, potterId: string) {
+    const next = potterId || null;
+    if (next === row.artistId) return;
+    const target = next ? availableArtists.find((a) => a.id === next)?.name : null;
+    const question = next
+      ? `Link ${row.username} to the artist profile "${target}"? They'll manage that profile and its pieces${
+          row.artistName ? ` instead of "${row.artistName}"` : ""
+        }.`
+      : `Unlink ${row.username} from "${row.artistName}"? The profile and its pieces stay as they are, but ${row.username} can no longer edit them.`;
+    if (!confirm(question)) return;
+    run(() => setUserArtist(row.id, next));
+  }
+
   function resetPassword(row: StudioUserRow) {
-    if (!confirm(`Give ${row.email} a new temporary password? Their current one stops working.`)) return;
+    if (!confirm(`Give ${row.username} a new temporary password? Their current one stops working.`)) return;
     const temp = generatePassword();
     run(
       () => resetUserPassword(row.id, temp),
-      `New temporary password for ${row.email}: ${temp}. Pass it on privately.`
+      `New temporary password for ${row.username}: ${temp}. Pass it on privately.`
     );
   }
 
@@ -110,8 +140,8 @@ export default function UsersManager({
     const next: StudioRole = row.role === "admin" ? "artist" : "admin";
     const question =
       next === "admin"
-        ? `Make ${row.email} a super admin? They'll be able to manage every user and all content.`
-        : `Make ${row.email} an artist? They'll only be able to manage their own profile and pieces.`;
+        ? `Make ${row.username} a super admin? They'll be able to manage every user and all content.`
+        : `Make ${row.username} an artist? They'll only be able to manage their own profile and pieces.`;
     if (!confirm(question)) return;
     run(() => setUserRole(row.id, next));
   }
@@ -120,7 +150,7 @@ export default function UsersManager({
     if (
       value &&
       !confirm(
-        `Archive ${row.email}? They won't be able to sign in, and their artist profile and work will be hidden from the site. You can restore them any time.`
+        `Archive ${row.username}? They won't be able to sign in, and their artist profile and work will be hidden from the site. You can restore them any time.`
       )
     ) {
       return;
@@ -131,8 +161,8 @@ export default function UsersManager({
   async function remove(row: StudioUserRow, mode: "keep-work" | "delete-everything") {
     const question =
       mode === "keep-work"
-        ? `Remove ${row.email}'s login? Their artist profile and work are kept, archived.`
-        : `Permanently delete ${row.email}, their artist profile, every piece and every photo? This cannot be undone.`;
+        ? `Remove ${row.username}'s login? Their artist profile and work are kept, archived.`
+        : `Permanently delete ${row.username}, their artist profile, every piece and every photo? This cannot be undone.`;
     if (!confirm(question)) return;
     const ok = await run(() => removeStudioUser(row.id, mode));
     if (ok) setRemoving(null);
@@ -143,16 +173,20 @@ export default function UsersManager({
       <form onSubmit={addUser} className="space-y-4 max-w-xl border border-stone/10 rounded p-5">
         <h2 className="font-serif text-lg text-stone">Add a user</h2>
         <div>
-          <label htmlFor="new-email" className={label}>Email</label>
+          <label htmlFor="new-username" className={label}>Username</label>
           <input
-            id="new-email"
-            type="email"
+            id="new-username"
+            type="text"
             autoComplete="off"
-            value={email}
-            onChange={(e) => setEmail(e.target.value)}
+            autoCapitalize="none"
+            autoCorrect="off"
+            spellCheck={false}
+            value={username}
+            onChange={(e) => setNewUsername(e.target.value)}
             className={input}
             required
           />
+          <p className="text-xs text-stone/40 mt-1">{USERNAME_RULES}</p>
         </div>
         <div>
           <label htmlFor="new-password" className={label}>Temporary password</label>
@@ -243,7 +277,7 @@ export default function UsersManager({
           <div key={row.id} className="py-4 border-b border-stone/10">
             <div className="flex flex-wrap items-baseline gap-x-3 gap-y-1">
               <span className={`text-sm ${row.status === "active" ? "text-stone" : "text-stone/50"}`}>
-                {row.email}
+                {row.username}
                 {row.isMe && <span className="text-stone/40"> (you)</span>}
               </span>
               <span className="text-[11px] uppercase tracking-wider text-stone/50">
@@ -256,28 +290,51 @@ export default function UsersManager({
                 {row.status === "active" && row.mustChangePassword && " · Hasn't set a password yet"}
               </span>
             </div>
-            {row.artistName && <p className="text-xs text-stone/50 mt-0.5">Artist: {row.artistName}</p>}
 
-            {!row.isMe && (
-              <div className="flex flex-wrap gap-x-4 gap-y-1 mt-2">
-                {row.status === "active" && (
-                  <>
-                    <button onClick={() => changeRole(row)} disabled={busy} className={`${action} text-clay hover:text-amber`}>
-                      {row.role === "admin" ? "Make artist" : "Make super admin"}
-                    </button>
-                    <button onClick={() => resetPassword(row)} disabled={busy} className={`${action} text-stone/50 hover:text-stone`}>
-                      Reset password
-                    </button>
-                    <button onClick={() => archive(row, true)} disabled={busy} className={`${action} text-stone/50 hover:text-stone`}>
-                      Archive
-                    </button>
-                  </>
-                )}
-                {row.status === "archived" && (
-                  <button onClick={() => archive(row, false)} disabled={busy} className={`${action} text-clay hover:text-amber`}>
-                    Restore
+            {row.status !== "no-access" && (
+              <div className="flex items-center gap-2 mt-2">
+                <label htmlFor={`artist-${row.id}`} className="text-xs text-stone/50">
+                  Artist profile
+                </label>
+                <select
+                  id={`artist-${row.id}`}
+                  value={row.artistId ?? ""}
+                  onChange={(e) => linkArtist(row, e.target.value)}
+                  disabled={busy}
+                  className="text-xs border border-stone/20 rounded-full px-3 py-1 bg-transparent text-stone focus:outline-none focus:border-clay cursor-pointer disabled:opacity-50"
+                >
+                  <option value="">None</option>
+                  {row.artistId && <option value={row.artistId}>{row.artistName ?? "Archived profile"}</option>}
+                  {availableArtists.map((a) => (
+                    <option key={a.id} value={a.id}>{a.name}</option>
+                  ))}
+                </select>
+              </div>
+            )}
+
+            <div className="flex flex-wrap gap-x-4 gap-y-1 mt-2">
+              <button onClick={() => renameUser(row)} disabled={busy} className={`${action} text-stone/50 hover:text-stone`}>
+                Change username
+              </button>
+              {!row.isMe && row.status === "active" && (
+                <>
+                  <button onClick={() => changeRole(row)} disabled={busy} className={`${action} text-clay hover:text-amber`}>
+                    {row.role === "admin" ? "Make artist" : "Make super admin"}
                   </button>
-                )}
+                  <button onClick={() => resetPassword(row)} disabled={busy} className={`${action} text-stone/50 hover:text-stone`}>
+                    Reset password
+                  </button>
+                  <button onClick={() => archive(row, true)} disabled={busy} className={`${action} text-stone/50 hover:text-stone`}>
+                    Archive
+                  </button>
+                </>
+              )}
+              {!row.isMe && row.status === "archived" && (
+                <button onClick={() => archive(row, false)} disabled={busy} className={`${action} text-clay hover:text-amber`}>
+                  Restore
+                </button>
+              )}
+              {!row.isMe && (
                 <button
                   onClick={() => setRemoving(removing === row.id ? null : row.id)}
                   disabled={busy}
@@ -285,8 +342,8 @@ export default function UsersManager({
                 >
                   Remove…
                 </button>
-              </div>
-            )}
+              )}
+            </div>
 
             {removing === row.id && (
               <div className="mt-3 flex flex-wrap gap-3 items-center bg-red-50/60 rounded p-3">

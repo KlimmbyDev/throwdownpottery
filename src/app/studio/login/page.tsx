@@ -3,12 +3,13 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
+import { loginEmail } from "@/lib/username";
 
 const input =
   "w-full border border-stone/20 rounded px-3 py-2.5 text-sm bg-cream focus:outline-none focus:border-clay";
 
 export default function LoginPage() {
-  const [email, setEmail] = useState("");
+  const [username, setUsername] = useState("");
   const [password, setPassword] = useState("");
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
@@ -19,11 +20,11 @@ export default function LoginPage() {
     setLoading(true);
     setError("");
     const { error } = await createClient().auth.signInWithPassword({
-      email: email.trim(),
+      email: loginEmail(username),
       password,
     });
     if (error) {
-      setError("Incorrect email or password.");
+      setError("Incorrect username or password.");
       setLoading(false);
       return;
     }
@@ -42,15 +43,18 @@ export default function LoginPage() {
         </div>
         <form onSubmit={handleLogin} className="space-y-4">
           <div>
-            <label htmlFor="email" className="block text-xs text-stone/50 uppercase tracking-wider mb-1">
-              Email
+            <label htmlFor="username" className="block text-xs text-stone/50 uppercase tracking-wider mb-1">
+              Username
             </label>
             <input
-              id="email"
-              type="email"
+              id="username"
+              type="text"
               autoComplete="username"
-              value={email}
-              onChange={(e) => setEmail(e.target.value)}
+              autoCapitalize="none"
+              autoCorrect="off"
+              spellCheck={false}
+              value={username}
+              onChange={(e) => setUsername(e.target.value)}
               className={input}
               required
               autoFocus

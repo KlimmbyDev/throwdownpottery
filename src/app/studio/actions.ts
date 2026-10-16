@@ -4,6 +4,12 @@ import { getStudioSession, type StudioRole } from "@/lib/studio-auth";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { createClient } from "@/lib/supabase/server";
 import { toSlug } from "@/lib/slug";
+import {
+  USERNAME_RULES,
+  isValidUsername,
+  normalizeUsername,
+  usernameToEmail,
+} from "@/lib/username";
 
 // Server functions can be called directly over HTTP, not only from the studio
 // UI, so every one re-checks the caller before doing anything.
@@ -11,7 +17,6 @@ import { toSlug } from "@/lib/slug";
 type Result = { error?: string };
 
 const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
-const EMAIL = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 const MIN_PASSWORD = 8;
 const FOREVER = "876000h";
 const MISSING_KEY =
@@ -27,6 +32,19 @@ async function requireAdminAction() {
 
 function assertId(id: string) {
   if (!UUID.test(id)) throw new Error("Invalid id");
+}
+
+// Messages for Supabase errors when creating or renaming a login. Unknown
+// errors include Supabase's code (never the address) so problems can be
+// diagnosed without anyone needing to look at account data.
+function loginError(error: { code?: string; message?: string } | null) {
+  if (error?.code === "email_exists" || error?.code === "user_already_exists") {
+    return "That username is already taken.";
+  }
+  if (error?.code === "weak_password") {
+    return "That temporary password is too easy to guess. Use the generated one.";
+  }
+  return `Couldn't save the login (Supabase: ${error?.code ?? "unknown error"}). Tell Luka.`;
 }
 
 type Admin = ReturnType<typeof createAdminClient>;
@@ -113,15 +131,15 @@ export type NewUserArtist =
   | { kind: "none" };
 
 export async function createStudioUser(input: {
-  email: string;
+  username: string;
   password: string;
   role: StudioRole;
   artist: NewUserArtist;
 }): Promise<Result> {
   const { admin } = await requireAdminAction();
-  const email = input.email.trim();
+  const username = normalizeUsername(input.username);
 
-  if (!EMAIL.test(email)) return { error: "Please enter a valid email address." };
+  if (!isValidUsername(username)) return { error: `Usernames need ${USERNAME_RULES}` };
   if (input.password.length < MIN_PASSWORD) {
     return { error: `The temporary password needs at least ${MIN_PASSWORD} characters.` };
   }
@@ -156,13 +174,13 @@ export async function createStudioUser(input: {
   }
 
   const { data: created, error: userError } = await admin.auth.admin.createUser({
-    email,
+    email: usernameToEmail(username),
     password: input.password,
     email_confirm: true,
   });
   if (userError || !created.user) {
     if (createdPotterId) await admin.from("potters").delete().eq("id", createdPotterId);
-    return { error: userError?.message ?? "Couldn't create the login." };
+    return { error: loginError(userError) };
   }
 
   const { error: memberError } = await admin.from("studio_members").insert({
@@ -193,6 +211,50 @@ export async function setUserRole(userId: string, role: StudioRole): Promise<Res
 
   const { error } = await admin.from("studio_members").update({ role }).eq("user_id", userId);
   return error ? { error: "Couldn't change the role." } : {};
+}
+
+export async function setUsername(userId: string, username: string): Promise<Result> {
+  const { admin } = await requireAdminAction();
+  assertId(userId);
+  const name = normalizeUsername(username);
+  if (!isValidUsername(name)) return { error: `Usernames need ${USERNAME_RULES}` };
+  const { error } = await admin.auth.admin.updateUserById(userId, {
+    email: usernameToEmail(name),
+    email_confirm: true,
+  });
+  return error ? { error: loginError(error) } : {};
+}
+
+export async function setUserArtist(userId: string, potterId: string | null): Promise<Result> {
+  const { admin } = await requireAdminAction();
+  assertId(userId);
+  if (potterId !== null) assertId(potterId);
+
+  const row = await memberRow(admin, userId);
+  if (!row) return { error: "This login has no studio access, so it can't be linked to an artist." };
+
+  if (potterId) {
+    const { data: potter } = await admin
+      .from("potters")
+      .select("archived_at")
+      .eq("id", potterId)
+      .maybeSingle();
+    if (!potter) return { error: "That artist profile no longer exists." };
+    if (potter.archived_at) return { error: "That artist profile is archived. Restore it first." };
+    const { data: linked } = await admin
+      .from("studio_members")
+      .select("user_id")
+      .eq("potter_id", potterId)
+      .neq("user_id", userId)
+      .maybeSingle();
+    if (linked) return { error: "That artist profile is already linked to another login." };
+  }
+
+  const { error } = await admin
+    .from("studio_members")
+    .update({ potter_id: potterId })
+    .eq("user_id", userId);
+  return error ? { error: "Couldn't change the artist link." } : {};
 }
 
 export async function resetUserPassword(userId: string, password: string): Promise<Result> {

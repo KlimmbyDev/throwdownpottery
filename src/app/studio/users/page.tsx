@@ -1,6 +1,7 @@
 import { requireAdmin } from "@/lib/studio-auth";
 import { createAdminClient } from "@/lib/supabase/admin";
 import UsersManager, { type StudioUserRow } from "@/components/studio/users-manager";
+import { loginName } from "@/lib/username";
 
 export default async function UsersPage() {
   const me = await requireAdmin();
@@ -37,15 +38,16 @@ export default async function UsersPage() {
       const m = memberById.get(u.id);
       return {
         id: u.id,
-        email: u.email ?? "",
+        username: loginName(u.email ?? ""),
         role: m?.role ?? null,
+        artistId: m?.potter_id ?? null,
         artistName: m?.potter_id ? potterName.get(m.potter_id) ?? null : null,
         status: !m ? "no-access" : m.disabled_at ? "archived" : "active",
         mustChangePassword: m?.must_change_password ?? false,
         isMe: u.id === me.userId,
       } satisfies StudioUserRow;
     })
-    .sort((a, b) => a.email.localeCompare(b.email));
+    .sort((a, b) => a.username.localeCompare(b.username));
 
   const availableArtists = (potters ?? [])
     .filter((p) => !p.archived_at && !linkedPotters.has(p.id))
