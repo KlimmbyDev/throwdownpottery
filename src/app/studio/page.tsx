@@ -4,6 +4,7 @@ import Link from "next/link";
 import Image from "next/image";
 import PieceActions from "@/components/studio/piece-actions";
 import PotterPicker from "@/components/studio/potter-picker";
+import ArtistSwitcher from "@/components/studio/artist-switcher";
 import { requireMember } from "@/lib/studio-auth";
 import type { Piece, PieceImage } from "@/lib/types";
 
@@ -40,7 +41,11 @@ export default async function StudioPage({
     if (potterSlug !== own.slug) redirect(`/studio?potter=${own.slug}`);
   }
 
+  // Super admins land on their own studio like everyone else; the picker is
+  // only a fallback for an admin login without an artist profile.
   if (!potterSlug) {
+    const own = potters?.find((p) => p.id === member.potterId);
+    if (own) redirect(`/studio?potter=${own.slug}`);
     return <PotterPicker potters={potters ?? []} />;
   }
 
@@ -106,12 +111,10 @@ export default async function StudioPage({
       <div className="flex items-center justify-between mb-8">
         <div>
           {isAdmin && (
-            <Link
-              href="/studio"
-              className="text-xs text-stone/40 hover:text-stone transition-colors mb-1 block"
-            >
-              ← Switch artist
-            </Link>
+            <ArtistSwitcher
+              artists={(potters ?? []).map((p) => ({ name: p.name, slug: p.slug }))}
+              current={potter.slug}
+            />
           )}
           <h1 className="font-serif text-2xl text-stone">{potter.name}</h1>
           <div className="flex flex-wrap gap-x-4 gap-y-1">

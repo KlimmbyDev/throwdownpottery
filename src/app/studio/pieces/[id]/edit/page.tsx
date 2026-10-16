@@ -2,7 +2,7 @@ import { createClient } from "@/lib/supabase/server";
 import { redirect, notFound } from "next/navigation";
 import Link from "next/link";
 import PieceForm from "@/components/studio/piece-form";
-import { canManagePotter, requireMember } from "@/lib/studio-auth";
+import { canManagePotter, liveArtists, requireMember } from "@/lib/studio-auth";
 
 export default async function EditPiecePage({
   params,
@@ -35,6 +35,8 @@ export default async function EditPiecePage({
 
   if (!piece) notFound();
 
+  const artists = member.role === "admin" ? await liveArtists() : undefined;
+
   return (
     <div>
       <div className="mb-8">
@@ -46,7 +48,7 @@ export default async function EditPiecePage({
         </Link>
         <h1 className="font-serif text-2xl text-stone mt-2">Edit piece</h1>
       </div>
-      <PieceForm potterId={potter.id} potterSlug={potter.slug} piece={piece} />
+      <PieceForm potterId={potter.id} potterSlug={potter.slug} piece={piece} artists={artists} />
     </div>
   );
 }

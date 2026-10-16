@@ -23,17 +23,22 @@ const CATEGORIES: { value: PieceCategory; label: string }[] = [
 type ExistingImage = PieceImage & { _toDelete?: boolean };
 type NewImage = { url: string };
 
+type Artist = { id: string; name: string; slug: string };
+
 type Props = {
   potterId: string;
   potterSlug: string;
   piece?: Piece & { piece_images?: PieceImage[] };
+  // Super admins only: lets them post for, or move a piece to, any artist.
+  artists?: Artist[];
 };
 
-export default function PieceForm({ potterId, potterSlug, piece }: Props) {
+export default function PieceForm({ potterId, potterSlug, piece, artists }: Props) {
   const router = useRouter();
   const [saving, setSaving] = useState(false);
   const [uploading, setUploading] = useState(false);
   const [error, setError] = useState("");
+  const [ownerId, setOwnerId] = useState(piece?.potter_id ?? potterId);
 
   const [title, setTitle] = useState(piece?.title ?? "");
   const [category, setCategory] = useState<PieceCategory>(piece?.category ?? "other");
@@ -99,10 +104,17 @@ export default function PieceForm({ potterId, potterSlug, piece }: Props) {
         dimensions: dimensions || null,
         available,
         featured,
+        ...(artists ? { potter_id: ownerId } : {}),
       };
 
       if (piece) {
-        await supabase.from("pieces").update(fields).eq("id", piece.id);
+        // RLS refuses silently: a blocked update returns no error and no rows.
+        const { data: updated, error: updateError } = await supabase
+          .from("pieces")
+          .update(fields)
+          .eq("id", piece.id)
+          .select("id");
+        if (updateError || !updated?.length) throw updateError;
 
         for (const img of existingImages.filter((i) => i._toDelete)) {
           await supabase.from("piece_images").delete().eq("id", img.id);
@@ -119,7 +131,7 @@ export default function PieceForm({ potterId, potterSlug, piece }: Props) {
       } else {
         const { data: newPiece, error: insertError } = await supabase
           .from("pieces")
-          .insert({ potter_id: potterId, ...fields })
+          .insert({ potter_id: ownerId, ...fields })
           .select("id")
           .single();
 
@@ -134,7 +146,8 @@ export default function PieceForm({ potterId, potterSlug, piece }: Props) {
         }
       }
 
-      router.push(`/studio?potter=${potterSlug}`);
+      const ownerSlug = artists?.find((a) => a.id === ownerId)?.slug ?? potterSlug;
+      router.push(`/studio?potter=${ownerSlug}`);
       router.refresh();
     } catch {
       setError("Something went wrong. Please try again.");
@@ -147,6 +160,27 @@ export default function PieceForm({ potterId, potterSlug, piece }: Props) {
 
   return (
     <form onSubmit={handleSubmit} className="space-y-6 max-w-xl">
+      {artists && (
+        <div>
+          <label htmlFor="piece-artist" className="block text-xs text-stone/50 uppercase tracking-wider mb-1">
+            Artist
+          </label>
+          <select
+            id="piece-artist"
+            value={ownerId}
+            onChange={(e) => setOwnerId(e.target.value)}
+            className="w-full border border-stone/20 rounded px-3 py-2.5 text-sm bg-cream focus:outline-none focus:border-clay cursor-pointer"
+          >
+            {artists.map((a) => (
+              <option key={a.id} value={a.id}>{a.name}</option>
+            ))}
+          </select>
+          <p className="text-xs text-stone/40 mt-1">
+            Super admin only. The piece appears under this artist.
+          </p>
+        </div>
+      )}
+
       {/* Photos */}
       <div>
         <label className="block text-xs text-stone/50 uppercase tracking-wider mb-3">

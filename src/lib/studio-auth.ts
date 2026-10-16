@@ -58,3 +58,13 @@ export async function requireAdmin() {
 export function canManagePotter(member: StudioMember, potterId: string) {
   return member.role === "admin" || member.potterId === potterId;
 }
+
+export async function liveArtists() {
+  const supabase = await createClient();
+  const { data } = await supabase
+    .from("potters")
+    .select("id, name, slug")
+    .is("archived_at", null)
+    .order("name");
+  return data ?? [];
+}
