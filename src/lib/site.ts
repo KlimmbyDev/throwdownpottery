@@ -3,6 +3,7 @@ import type { Metadata } from "next";
 export const SITE_URL = "https://throwdownpottery.vercel.app";
 export const SITE_NAME = "Throw Down Pottery";
 export const SITE_DESCRIPTION = "Handcrafted pottery and prints by a collective of artists.";
+export const CONTACT_EMAIL = "Sarahmahbusiness@gmail.com";
 
 const DEFAULT_IMAGE = { url: "/og", width: 1200, height: 630, alt: SITE_NAME };
 

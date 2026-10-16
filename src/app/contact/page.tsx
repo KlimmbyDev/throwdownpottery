@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import { CONTACT_EMAIL } from "@/lib/site";
 
 export const metadata: Metadata = {
   title: "Contact",
@@ -6,8 +7,7 @@ export const metadata: Metadata = {
 };
 
 export default function ContactPage() {
-  const email =
-    process.env.NEXT_PUBLIC_CONTACT_EMAIL ?? "hello@throwdownpottery.com";
+  const email = CONTACT_EMAIL;
 
   return (
     <div className="max-w-2xl mx-auto px-4 sm:px-6 py-24">

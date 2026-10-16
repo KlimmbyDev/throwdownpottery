@@ -5,7 +5,7 @@ import { notFound } from "next/navigation";
 import type { Metadata } from "next";
 import PieceCard from "@/components/piece-card";
 import { getPiece } from "@/lib/data";
-import { openGraph, truncate } from "@/lib/site";
+import { CONTACT_EMAIL, openGraph, truncate } from "@/lib/site";
 import type { Piece, PieceImage } from "@/lib/types";
 
 type Props = { params: Promise<{ id: string }> };
@@ -57,8 +57,7 @@ export default async function PiecePage({ params }: Props) {
 
   const images = sortedImages(piece);
   const primaryImage = images[0];
-  const contactEmail =
-    process.env.NEXT_PUBLIC_CONTACT_EMAIL ?? "hello@throwdownpottery.com";
+  const contactEmail = CONTACT_EMAIL;
 
   return (
     <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-16">
