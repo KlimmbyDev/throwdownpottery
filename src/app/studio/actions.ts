@@ -2,6 +2,7 @@
 
 import { getStudioSession, type StudioRole } from "@/lib/studio-auth";
 import { createAdminClient } from "@/lib/supabase/admin";
+import { createClient } from "@/lib/supabase/server";
 import { toSlug } from "@/lib/slug";
 
 // Server functions can be called directly over HTTP, not only from the studio
@@ -13,6 +14,8 @@ const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 const EMAIL = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 const MIN_PASSWORD = 8;
 const FOREVER = "876000h";
+const MISSING_KEY =
+  "The studio isn't fully set up yet: the server's admin key (SUPABASE_SERVICE_ROLE_KEY) is missing. Ask Luka to add it in Vercel.";
 
 async function requireAdminAction() {
   const { member } = await getStudioSession();
@@ -61,17 +64,44 @@ async function guardAdminRemoval(admin: Admin, meId: string, userId: string): Pr
 
 export async function changeOwnPassword(password: string): Promise<Result> {
   const { member } = await getStudioSession();
-  if (!member) throw new Error("Not allowed");
+  if (!member) return { error: "Your session has expired. Please sign in again." };
   if (password.length < MIN_PASSWORD) {
     return { error: `Use at least ${MIN_PASSWORD} characters.` };
   }
-  const admin = createAdminClient();
-  const { error } = await admin.auth.admin.updateUserById(member.userId, { password });
-  if (error) return { error: "Couldn't change your password. Please try again." };
-  await admin
+
+  // Needed afterwards to clear must_change_password; checked first so a
+  // missing key can't leave the password changed but the flag still set.
+  let admin: Admin;
+  try {
+    admin = createAdminClient();
+  } catch {
+    return { error: MISSING_KEY };
+  }
+
+  // Through the user's own session rather than the admin API, so Supabase
+  // rejects reusing the current (temporary) password and weak passwords.
+  const supabase = await createClient();
+  const { error } = await supabase.auth.updateUser({ password });
+  if (error) {
+    switch (error.code) {
+      case "same_password":
+        return { error: "Choose a password that's different from your current one." };
+      case "weak_password":
+        return { error: "That password is too easy to guess. Try a longer one." };
+      case "reauthentication_needed":
+        return { error: "For security, sign out, sign back in, then change your password." };
+      default:
+        return { error: "Couldn't change your password. Please try again." };
+    }
+  }
+
+  const { error: flagError } = await admin
     .from("studio_members")
     .update({ must_change_password: false })
     .eq("user_id", member.userId);
+  if (flagError) {
+    return { error: "Your password was changed, but the studio couldn't record it. Please try again." };
+  }
   return {};
 }
 

@@ -14,18 +14,28 @@ export default function ManagePotters({ potters }: { potters: Potter[] }) {
   const live = potters.filter((p) => !p.archived_at);
   const archived = potters.filter((p) => p.archived_at);
 
+  async function run(task: () => Promise<{ error?: string }>) {
+    setBusy(true);
+    setError("");
+    try {
+      const result = await task();
+      if (result.error) {
+        setError(result.error);
+        return false;
+      }
+      router.refresh();
+      return true;
+    } catch {
+      setError("Something went wrong. Please reload the page and try again.");
+      return false;
+    } finally {
+      setBusy(false);
+    }
+  }
+
   async function addPotter(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault();
-    setError("");
-    setBusy(true);
-    const result = await addArtist(name);
-    setBusy(false);
-    if (result.error) {
-      setError(result.error);
-      return;
-    }
-    setName("");
-    router.refresh();
+    if (await run(() => addArtist(name))) setName("");
   }
 
   async function setArchived(potter: Potter, value: boolean) {
@@ -37,15 +47,7 @@ export default function ManagePotters({ potters }: { potters: Potter[] }) {
     ) {
       return;
     }
-    setBusy(true);
-    setError("");
-    const result = await setArtistArchived(potter.id, value);
-    setBusy(false);
-    if (result.error) {
-      setError(result.error);
-      return;
-    }
-    router.refresh();
+    run(() => setArtistArchived(potter.id, value));
   }
 
   const row = "flex items-center justify-between py-3 border-b border-stone/10";

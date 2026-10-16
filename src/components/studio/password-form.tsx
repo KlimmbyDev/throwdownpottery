@@ -23,14 +23,19 @@ export default function PasswordForm() {
       return;
     }
     setSaving(true);
-    const result = await changeOwnPassword(password);
-    if (result.error) {
-      setError(result.error);
+    try {
+      const result = await changeOwnPassword(password);
+      if (result.error) {
+        setError(result.error);
+        setSaving(false);
+        return;
+      }
+      router.push("/studio");
+      router.refresh();
+    } catch {
+      setError("Something went wrong. Please reload the page and try again.");
       setSaving(false);
-      return;
     }
-    router.push("/studio");
-    router.refresh();
   }
 
   return (
