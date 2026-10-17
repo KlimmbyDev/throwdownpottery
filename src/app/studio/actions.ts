@@ -4,7 +4,7 @@ import { getStudioSession, type StudioRole } from "@/lib/studio-auth";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { createClient } from "@/lib/supabase/server";
 import { toSlug } from "@/lib/slug";
-import { NEWS_MAX_LENGTH } from "@/lib/news";
+import { NEWS_MAX_LENGTH, NEWS_TITLE_MAX_LENGTH } from "@/lib/news";
 import {
   USERNAME_RULES,
   isValidUsername,
@@ -374,20 +374,26 @@ export async function setArtistArchived(potterId: string, archived: boolean): Pr
 
 // Uses the admin's own session: the site_news policy itself only lets super
 // admins write, so no service-role key is involved.
-export async function saveNews(
-  body: string,
-  show: boolean,
-  imageUrl: string | null
-): Promise<Result> {
+export async function saveNews(input: {
+  title: string;
+  body: string;
+  show: boolean;
+  imageUrl: string | null;
+}): Promise<Result> {
   const { member } = await getStudioSession();
   if (!member || member.role !== "admin" || member.mustChangePassword) {
     throw new Error("Not allowed");
   }
 
-  const text = body.trim();
-  if (show && !text) return { error: "Write something before showing it on the homepage." };
+  const { show, imageUrl } = input;
+  const title = input.title.trim();
+  const text = input.body.trim();
+  if (show && !title) return { error: "Add a headline before showing it on the homepage." };
+  if (title.length > NEWS_TITLE_MAX_LENGTH) {
+    return { error: `Keep the headline under ${NEWS_TITLE_MAX_LENGTH} characters.` };
+  }
   if (text.length > NEWS_MAX_LENGTH) {
-    return { error: `Keep it under ${NEWS_MAX_LENGTH} characters.` };
+    return { error: `Keep the text under ${NEWS_MAX_LENGTH} characters.` };
   }
   const storagePrefix = `${process.env.NEXT_PUBLIC_SUPABASE_URL}/storage/v1/object/public/pottery-images/`;
   if (imageUrl !== null && !imageUrl.startsWith(storagePrefix)) {
@@ -397,21 +403,33 @@ export async function saveNews(
   const supabase = await createClient();
   const { data: current } = await supabase
     .from("site_news")
-    .select("body, published_at, image_url")
+    .select("*")
     .eq("id", 1)
     .maybeSingle();
 
-  // The date visitors see moves forward when news is first shown or its text
-  // or photo changes, not when an unchanged post is simply saved again.
+  // The date visitors see moves forward when news is first shown or anything
+  // in it changes, not when an unchanged post is simply saved again.
   const now = new Date().toISOString();
-  const unchanged = current?.body === text && current?.image_url === imageUrl;
+  const unchanged =
+    (current?.title ?? "") === title &&
+    (current?.body ?? "") === text &&
+    (current?.image_url ?? null) === imageUrl;
   const publishedAt = !show ? null : current?.published_at && unchanged ? current.published_at : now;
 
   const { data, error } = await supabase
     .from("site_news")
-    .update({ body: text || null, image_url: imageUrl, published_at: publishedAt, updated_at: now })
+    .update({
+      title: title || null,
+      body: text || null,
+      image_url: imageUrl,
+      published_at: publishedAt,
+      updated_at: now,
+    })
     .eq("id", 1)
     .select("id");
+  if (error?.code === "PGRST204" || error?.code === "42703") {
+    return { error: "News headlines aren't set up in the database yet. Ask Luka to run the headline SQL." };
+  }
   // RLS refuses silently: a blocked update returns no error and no rows.
   if (error || !data?.length) return { error: "Couldn't save the news. Please try again." };
   return {};

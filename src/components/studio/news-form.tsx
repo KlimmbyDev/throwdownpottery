@@ -8,18 +8,27 @@ import NewsBanner from "@/components/news-banner";
 import NewsBar from "@/components/news-bar";
 import { createClient } from "@/lib/supabase/client";
 import { resizeImage } from "@/lib/resize-image";
-import { NEWS_MAX_LENGTH, formatNewsDate } from "@/lib/news";
+import {
+  NEWS_MAX_LENGTH,
+  NEWS_TITLE_MAX_LENGTH,
+  formatNewsDate,
+  newsHasMore,
+  type News,
+} from "@/lib/news";
 
 export default function NewsForm({
+  initialTitle,
   initialBody,
   initialImageUrl,
   publishedAt,
 }: {
+  initialTitle: string;
   initialBody: string;
   initialImageUrl: string | null;
   publishedAt: string | null;
 }) {
   const router = useRouter();
+  const [title, setTitle] = useState(initialTitle);
   const [body, setBody] = useState(initialBody);
   const [imageUrl, setImageUrl] = useState(initialImageUrl);
   const [show, setShow] = useState(publishedAt !== null);
@@ -27,7 +36,10 @@ export default function NewsForm({
   const [uploading, setUploading] = useState(false);
   const [notice, setNotice] = useState<{ kind: "ok" | "error"; text: string } | null>(null);
 
-  const unchanged = body.trim() === initialBody.trim() && imageUrl === initialImageUrl;
+  const unchanged =
+    title.trim() === initialTitle.trim() &&
+    body.trim() === initialBody.trim() &&
+    imageUrl === initialImageUrl;
   const previewDate = publishedAt && unchanged ? publishedAt : new Date().toISOString();
 
   async function handlePhoto(e: React.ChangeEvent<HTMLInputElement>) {
@@ -57,7 +69,7 @@ export default function NewsForm({
     setSaving(true);
     setNotice(null);
     try {
-      const result = await saveNews(body, show, imageUrl);
+      const result = await saveNews({ title, body, show, imageUrl });
       if (result.error) {
         setNotice({ kind: "error", text: result.error });
       } else {
@@ -74,7 +86,12 @@ export default function NewsForm({
     }
   }
 
-  const previewNews = { body: body.trim(), publishedAt: previewDate, imageUrl };
+  const previewNews: News = {
+    title: title.trim(),
+    body: body.trim() || null,
+    publishedAt: previewDate,
+    imageUrl,
+  };
 
   return (
     <div className="space-y-10">
@@ -86,8 +103,28 @@ export default function NewsForm({
         </p>
 
         <div>
+          <label htmlFor="news-title" className="block text-xs text-stone/50 uppercase tracking-wider mb-1">
+            Headline
+          </label>
+          <input
+            id="news-title"
+            value={title}
+            onChange={(e) => setTitle(e.target.value)}
+            maxLength={NEWS_TITLE_MAX_LENGTH}
+            placeholder="e.g. Winter market on 6 December"
+            className="w-full border border-stone/20 rounded px-3 py-2.5 text-sm bg-cream focus:outline-none focus:border-clay"
+          />
+          <div className="flex justify-between gap-4 text-xs text-stone/40">
+            <span>Shown in the slim bar right under the menu.</span>
+            <span className="shrink-0">
+              {title.length} / {NEWS_TITLE_MAX_LENGTH}
+            </span>
+          </div>
+        </div>
+
+        <div>
           <label htmlFor="news-body" className="block text-xs text-stone/50 uppercase tracking-wider mb-1">
-            News
+            Text (optional)
           </label>
           <textarea
             id="news-body"
@@ -95,11 +132,11 @@ export default function NewsForm({
             onChange={(e) => setBody(e.target.value)}
             rows={5}
             maxLength={NEWS_MAX_LENGTH}
-            placeholder="e.g. Our winter market is on 6 December. Come and say hello!"
+            placeholder="e.g. New work from every artist in the collective. Come and say hello!"
             className="w-full border border-stone/20 rounded px-3 py-2.5 text-sm bg-cream focus:outline-none focus:border-clay resize-none"
           />
           <div className="flex justify-between gap-4 text-xs text-stone/40">
-            <span>The first line also appears in the slim bar at the top.</span>
+            <span>With text or a photo, the bar gets a &ldquo;Read more&rdquo; link to them.</span>
             <span className="shrink-0">
               {body.length} / {NEWS_MAX_LENGTH}
             </span>
@@ -165,7 +202,7 @@ export default function NewsForm({
         </button>
       </form>
 
-      {show && previewNews.body && (
+      {show && previewNews.title && (
         <div className="space-y-2">
           <p className="text-xs text-stone/50 uppercase tracking-wider">Preview</p>
           <div className="border border-stone/10 rounded overflow-hidden">
@@ -173,7 +210,7 @@ export default function NewsForm({
             <div className="bg-stone/90 text-cream/40 text-center text-xs py-6">
               (homepage header)
             </div>
-            <NewsBanner news={previewNews} />
+            {newsHasMore(previewNews) && <NewsBanner news={previewNews} />}
           </div>
         </div>
       )}

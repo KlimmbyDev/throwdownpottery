@@ -5,7 +5,7 @@ import { createClient } from "@/lib/supabase/server";
 import { pickHomepagePieces } from "@/lib/homepage";
 import NewsBanner from "@/components/news-banner";
 import NewsBar from "@/components/news-bar";
-import type { News } from "@/lib/news";
+import { newsHasMore, toNews, type News } from "@/lib/news";
 
 export default async function Home() {
   let featuredPieces = null;
@@ -24,21 +24,10 @@ export default async function Home() {
         .order("created_at", { ascending: false }),
       supabase.from("potters").select("*").is("archived_at", null).order("name"),
       // Filtered here too: a signed-in super admin can read the unpublished draft.
-      supabase
-        .from("site_news")
-        .select("body, published_at, image_url")
-        .not("published_at", "is", null)
-        .not("body", "is", null)
-        .maybeSingle(),
+      supabase.from("site_news").select("*").not("published_at", "is", null).maybeSingle(),
     ]);
     potters = pottersRes.data;
-    if (newsRes.data?.body && newsRes.data.published_at) {
-      news = {
-        body: newsRes.data.body,
-        publishedAt: newsRes.data.published_at,
-        imageUrl: newsRes.data.image_url,
-      };
-    }
+    news = toNews(newsRes.data);
     featuredPieces = pickHomepagePieces(
       piecesRes.data ?? [],
       (potters ?? []).map((p) => p.id)
@@ -83,7 +72,7 @@ export default async function Home() {
         </div>
       </section>
 
-      {news && <NewsBanner news={news} />}
+      {news && newsHasMore(news) && <NewsBanner news={news} />}
 
       {/* Featured pieces */}
       {featuredPieces && featuredPieces.length > 0 && (
