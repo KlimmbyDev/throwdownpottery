@@ -4,6 +4,7 @@ import PotterCard from "@/components/potter-card";
 import { createClient } from "@/lib/supabase/server";
 import { pickHomepagePieces } from "@/lib/homepage";
 import NewsBanner from "@/components/news-banner";
+import NewsBar from "@/components/news-bar";
 import type { News } from "@/lib/news";
 
 export default async function Home() {
@@ -25,14 +26,18 @@ export default async function Home() {
       // Filtered here too: a signed-in super admin can read the unpublished draft.
       supabase
         .from("site_news")
-        .select("body, published_at")
+        .select("body, published_at, image_url")
         .not("published_at", "is", null)
         .not("body", "is", null)
         .maybeSingle(),
     ]);
     potters = pottersRes.data;
     if (newsRes.data?.body && newsRes.data.published_at) {
-      news = { body: newsRes.data.body, publishedAt: newsRes.data.published_at };
+      news = {
+        body: newsRes.data.body,
+        publishedAt: newsRes.data.published_at,
+        imageUrl: newsRes.data.image_url,
+      };
     }
     featuredPieces = pickHomepagePieces(
       piecesRes.data ?? [],
@@ -44,6 +49,8 @@ export default async function Home() {
 
   return (
     <>
+      {news && <NewsBar news={news} />}
+
       {/* Hero */}
       <section className="relative overflow-hidden bg-stone py-32 md:py-48">
         <div className="absolute inset-0 bg-[radial-gradient(circle_at_70%_50%,#A47E77,transparent_60%)] opacity-20" />

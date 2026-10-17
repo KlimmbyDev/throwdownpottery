@@ -2,32 +2,62 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
+import Image from "next/image";
 import { saveNews } from "@/app/studio/actions";
 import NewsBanner from "@/components/news-banner";
+import NewsBar from "@/components/news-bar";
+import { createClient } from "@/lib/supabase/client";
+import { resizeImage } from "@/lib/resize-image";
 import { NEWS_MAX_LENGTH, formatNewsDate } from "@/lib/news";
 
 export default function NewsForm({
   initialBody,
+  initialImageUrl,
   publishedAt,
 }: {
   initialBody: string;
+  initialImageUrl: string | null;
   publishedAt: string | null;
 }) {
   const router = useRouter();
   const [body, setBody] = useState(initialBody);
+  const [imageUrl, setImageUrl] = useState(initialImageUrl);
   const [show, setShow] = useState(publishedAt !== null);
   const [saving, setSaving] = useState(false);
+  const [uploading, setUploading] = useState(false);
   const [notice, setNotice] = useState<{ kind: "ok" | "error"; text: string } | null>(null);
 
-  const previewDate =
-    publishedAt && body.trim() === initialBody.trim() ? publishedAt : new Date().toISOString();
+  const unchanged = body.trim() === initialBody.trim() && imageUrl === initialImageUrl;
+  const previewDate = publishedAt && unchanged ? publishedAt : new Date().toISOString();
+
+  async function handlePhoto(e: React.ChangeEvent<HTMLInputElement>) {
+    const original = e.target.files?.[0];
+    e.target.value = "";
+    if (!original) return;
+    setUploading(true);
+    setNotice(null);
+    const file = await resizeImage(original);
+    const ext = file.name.split(".").pop();
+    const path = `news/${crypto.randomUUID()}.${ext}`;
+    const supabase = createClient();
+    const { error } = await supabase.storage.from("pottery-images").upload(path, file);
+    if (error) {
+      setNotice({
+        kind: "error",
+        text: "Couldn't upload that photo. Use a JPEG, PNG, WebP, GIF or HEIC under 10 MB.",
+      });
+    } else {
+      setImageUrl(supabase.storage.from("pottery-images").getPublicUrl(path).data.publicUrl);
+    }
+    setUploading(false);
+  }
 
   async function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault();
     setSaving(true);
     setNotice(null);
     try {
-      const result = await saveNews(body, show);
+      const result = await saveNews(body, show, imageUrl);
       if (result.error) {
         setNotice({ kind: "error", text: result.error });
       } else {
@@ -44,14 +74,17 @@ export default function NewsForm({
     }
   }
 
+  const previewNews = { body: body.trim(), publishedAt: previewDate, imageUrl };
+
   return (
     <div className="space-y-10">
-      <form onSubmit={handleSubmit} className="space-y-4 max-w-xl">
+      <form onSubmit={handleSubmit} className="space-y-5 max-w-xl">
         <p className="text-sm text-stone/60">
           {publishedAt
             ? `Live on the homepage since ${formatNewsDate(publishedAt)}.`
             : "Not shown on the homepage."}
         </p>
+
         <div>
           <label htmlFor="news-body" className="block text-xs text-stone/50 uppercase tracking-wider mb-1">
             News
@@ -62,13 +95,51 @@ export default function NewsForm({
             onChange={(e) => setBody(e.target.value)}
             rows={5}
             maxLength={NEWS_MAX_LENGTH}
-            placeholder="e.g. Our winter market is on 6 December — come and say hello!"
+            placeholder="e.g. Our winter market is on 6 December. Come and say hello!"
             className="w-full border border-stone/20 rounded px-3 py-2.5 text-sm bg-cream focus:outline-none focus:border-clay resize-none"
           />
-          <p className="text-xs text-stone/40 text-right">
-            {body.length} / {NEWS_MAX_LENGTH}
-          </p>
+          <div className="flex justify-between gap-4 text-xs text-stone/40">
+            <span>The first line also appears in the slim bar at the top.</span>
+            <span className="shrink-0">
+              {body.length} / {NEWS_MAX_LENGTH}
+            </span>
+          </div>
         </div>
+
+        <div>
+          <span className="block text-xs text-stone/50 uppercase tracking-wider mb-2">
+            Photo (optional)
+          </span>
+          <div className="flex items-center gap-4">
+            {imageUrl && (
+              <div className="relative w-24 aspect-[4/3] rounded-sm overflow-hidden bg-blush/30 shrink-0">
+                <Image src={imageUrl} alt="" fill className="object-cover" sizes="96px" />
+              </div>
+            )}
+            <div className="flex flex-col items-start gap-1">
+              <label className="text-sm text-clay hover:text-amber transition-colors cursor-pointer">
+                {uploading ? "Uploading…" : imageUrl ? "Change photo" : "Add photo"}
+                <input
+                  type="file"
+                  accept="image/*"
+                  className="hidden"
+                  onChange={handlePhoto}
+                  disabled={uploading}
+                />
+              </label>
+              {imageUrl && (
+                <button
+                  type="button"
+                  onClick={() => setImageUrl(null)}
+                  className="text-xs text-stone/40 hover:text-red-400 transition-colors cursor-pointer"
+                >
+                  Remove photo
+                </button>
+              )}
+            </div>
+          </div>
+        </div>
+
         <label className="flex items-center gap-2 cursor-pointer">
           <input
             type="checkbox"
@@ -78,28 +149,31 @@ export default function NewsForm({
           />
           <span className="text-sm text-stone">Show on the homepage</span>
         </label>
+
         {notice && (
-          <p
-            role="status"
-            className={`text-sm ${notice.kind === "ok" ? "text-stone" : "text-red-500"}`}
-          >
+          <p role="status" className={`text-sm ${notice.kind === "ok" ? "text-stone" : "text-red-500"}`}>
             {notice.text}
           </p>
         )}
+
         <button
           type="submit"
-          disabled={saving}
+          disabled={saving || uploading}
           className="bg-sage text-stone font-medium px-8 py-3 rounded-full text-sm hover:bg-amber transition-colors disabled:opacity-50 cursor-pointer"
         >
           {saving ? "Saving…" : "Save"}
         </button>
       </form>
 
-      {show && body.trim() && (
-        <div>
-          <p className="text-xs text-stone/50 uppercase tracking-wider mb-2">Preview</p>
+      {show && previewNews.body && (
+        <div className="space-y-2">
+          <p className="text-xs text-stone/50 uppercase tracking-wider">Preview</p>
           <div className="border border-stone/10 rounded overflow-hidden">
-            <NewsBanner news={{ body: body.trim(), publishedAt: previewDate }} />
+            <NewsBar news={previewNews} />
+            <div className="bg-stone/90 text-cream/40 text-center text-xs py-6">
+              (homepage header)
+            </div>
+            <NewsBanner news={previewNews} />
           </div>
         </div>
       )}
