@@ -26,6 +26,7 @@ export default async function StudioLayout({ children }: { children: React.React
               <>
                 <Link href="/studio/users" className={link}>Users</Link>
                 <Link href="/studio/artists" className={link}>Artists</Link>
+                <Link href="/studio/news" className={link}>News</Link>
               </>
             )}
             <Link href="/" className={link}>View site</Link>

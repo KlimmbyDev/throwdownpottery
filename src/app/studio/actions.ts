@@ -4,6 +4,7 @@ import { getStudioSession, type StudioRole } from "@/lib/studio-auth";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { createClient } from "@/lib/supabase/server";
 import { toSlug } from "@/lib/slug";
+import { NEWS_MAX_LENGTH } from "@/lib/news";
 import {
   USERNAME_RULES,
   isValidUsername,
@@ -367,4 +368,46 @@ export async function setArtistArchived(potterId: string, archived: boolean): Pr
     .update({ archived_at: archived ? new Date().toISOString() : null })
     .eq("id", potterId);
   return error ? { error: "Couldn't update that artist. Please try again." } : {};
+}
+
+// --- Homepage news (admin only) --------------------------------------------
+
+// Uses the admin's own session: the site_news policy itself only lets super
+// admins write, so no service-role key is involved.
+export async function saveNews(body: string, show: boolean): Promise<Result> {
+  const { member } = await getStudioSession();
+  if (!member || member.role !== "admin" || member.mustChangePassword) {
+    throw new Error("Not allowed");
+  }
+
+  const text = body.trim();
+  if (show && !text) return { error: "Write something before showing it on the homepage." };
+  if (text.length > NEWS_MAX_LENGTH) {
+    return { error: `Keep it under ${NEWS_MAX_LENGTH} characters.` };
+  }
+
+  const supabase = await createClient();
+  const { data: current } = await supabase
+    .from("site_news")
+    .select("body, published_at")
+    .eq("id", 1)
+    .maybeSingle();
+
+  // The date visitors see moves forward when news is first shown or its text
+  // changes, not when an unchanged post is simply saved again.
+  const now = new Date().toISOString();
+  const publishedAt = !show
+    ? null
+    : current?.published_at && current.body === text
+      ? current.published_at
+      : now;
+
+  const { data, error } = await supabase
+    .from("site_news")
+    .update({ body: text || null, published_at: publishedAt, updated_at: now })
+    .eq("id", 1)
+    .select("id");
+  // RLS refuses silently: a blocked update returns no error and no rows.
+  if (error || !data?.length) return { error: "Couldn't save the news. Please try again." };
+  return {};
 }

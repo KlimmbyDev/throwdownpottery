@@ -3,14 +3,17 @@ import PieceCard from "@/components/piece-card";
 import PotterCard from "@/components/potter-card";
 import { createClient } from "@/lib/supabase/server";
 import { pickHomepagePieces } from "@/lib/homepage";
+import NewsBanner from "@/components/news-banner";
+import type { News } from "@/lib/news";
 
 export default async function Home() {
   let featuredPieces = null;
   let potters = null;
+  let news: News | null = null;
 
   try {
     const supabase = await createClient();
-    const [piecesRes, pottersRes] = await Promise.all([
+    const [piecesRes, pottersRes, newsRes] = await Promise.all([
       supabase
         .from("pieces")
         .select("*, potter:potters!inner(*), piece_images(*)")
@@ -19,8 +22,18 @@ export default async function Home() {
         .is("potter.archived_at", null)
         .order("created_at", { ascending: false }),
       supabase.from("potters").select("*").is("archived_at", null).order("name"),
+      // Filtered here too: a signed-in super admin can read the unpublished draft.
+      supabase
+        .from("site_news")
+        .select("body, published_at")
+        .not("published_at", "is", null)
+        .not("body", "is", null)
+        .maybeSingle(),
     ]);
     potters = pottersRes.data;
+    if (newsRes.data?.body && newsRes.data.published_at) {
+      news = { body: newsRes.data.body, publishedAt: newsRes.data.published_at };
+    }
     featuredPieces = pickHomepagePieces(
       piecesRes.data ?? [],
       (potters ?? []).map((p) => p.id)
@@ -62,6 +75,8 @@ export default async function Home() {
           </div>
         </div>
       </section>
+
+      {news && <NewsBanner news={news} />}
 
       {/* Featured pieces */}
       {featuredPieces && featuredPieces.length > 0 && (
